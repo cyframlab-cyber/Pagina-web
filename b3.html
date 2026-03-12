@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>Archivos-2 · Login Global</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: #f4f7fb;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        
+        /* Pantalla de login (ocupa toda la pantalla inicialmente) */
+        .login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0d1117, #1a2639);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            transition: opacity 0.5s ease;
+        }
+        .login-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .login-container {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 48px;
+            padding: 50px 40px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            border: 2px solid #2dba4e;
+        }
+        .login-container h1 {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #0d1117;
+            margin-bottom: 40px;
+            font-size: 2rem;
+        }
+        .login-container h1 i {
+            color: #2dba4e;
+        }
+        .login-input {
+            width: 100%;
+            padding: 18px 22px;
+            border-radius: 60px;
+            border: 2px solid #e2e8f0;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            transition: 0.2s;
+        }
+        .login-input:focus {
+            border-color: #2dba4e;
+            outline: none;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 18px;
+            border-radius: 60px;
+            border: none;
+            background: #2dba4e;
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 20px;
+            transition: 0.15s;
+        }
+        .login-btn:hover {
+            background: #24963e;
+            transform: translateY(-2px);
+        }
+        .login-switch {
+            text-align: center;
+            margin-top: 25px;
+            color: #64748b;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .login-switch span {
+            color: #2dba4e;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+        .login-error {
+            color: #ef4444;
+            margin-top: 15px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        /* App principal (oculta hasta login) */
+        .app-container {
+            max-width: 1400px;
+            width: 100%;
+            background: rgba(255,255,255,0.75);
+            backdrop-filter: blur(4px);
+            border-radius: 36px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+            padding: 24px 28px;
+            border: 1px solid rgba(255,255,255,0.5);
+            display: none;
+        }
+        .app-container.visible {
+            display: block;
+        }
+        
+        .user-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.3);
+            border-radius: 60px;
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(4px);
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .user-avatar {
+            background: #2dba4e;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+        .user-role {
+            background: #0d1117;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+        }
+        .auth-buttons button {
+            padding: 10px 24px;
+            border-radius: 40px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .logout-btn {
+            background: #ef4444;
+            color: white;
+        }
+
+        .tabs-header {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 10px 0 25px;
+            border-bottom: 2px solid rgba(0,0,0,0.1);
+            padding-bottom: 12px;
+        }
+        .tab-btn {
+            padding: 14px 28px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            border: none;
+            background: rgba(230, 240, 255, 0.7);
+            color: #1a2639;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .tab-btn.activa {
+            background: #ffffffcc;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.15);
+            font-weight: 700;
+            transform: scale(1.02);
+        }
+        .tab-btn.admin-tab {
+            background: linear-gradient(145deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .config-panel {
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 48px;
+            padding: 30px;
+            margin: 20px 0;
+            border: 2px solid #f59e0b;
+        }
+        
+        .token-connector {
+            background: linear-gradient(135deg, #0d1117, #1a2639);
+            border-radius: 80px;
+            padding: 16px 24px;
+            margin-bottom: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 20px;
+            border: 1px solid #f59e0b;
+        }
+        .token-connector input {
+            flex: 3;
+            min-width: 280px;
+            padding: 16px 22px;
+            border-radius: 60px;
+            border: none;
+            background: rgba(255,255,255,0.15);
+            color: white;
+            font-size: 1rem;
+            font-family: monospace;
+        }
+        .connect-btn {
+            background: #f59e0b;
+            border: none;
+            color: white;
+            padding: 14px 28px;
+            border-radius: 60px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .connection-badge {
+            background: rgba(255,255,255,0.1);
+            border-radius: 40px;
+            padding: 8px 18px;
+            color: white;
+        }
+
+        .users-section {
+            background: white;
+            border-radius: 36px;
+            padding: 28px;
+            margin-bottom: 30px;
+        }
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .users-table th {
+            text-align: left;
+            padding: 15px 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .users-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .status-active { background: #2dba4e; width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .status-inactive { background: #94a3b8; width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+
+        .config-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+        }
+        .config-card {
+            background: white;
+            border-radius: 36px;
+            padding: 28px;
+        }
+        .input-group { margin-bottom: 20px; }
+        .input-group input, .input-group textarea, .input-group select {
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: 30px;
+            border: 1px solid #cbd5e1;
+        }
+        .style-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            background: #f8fafc;
+            padding: 12px 18px;
+            border-radius: 50px;
+        }
+        .primary-btn {
+            background: #2dba4e;
+            border: none;
+            color: white;
+            padding: 14px 28px;
+            border-radius: 40px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+        }
+        .primary-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .files-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 22px;
+            margin-top: 25px;
+        }
+        .targeta-card {
+            background: rgba(255,255,255,0.6);
+            border-radius: 28px;
+            padding: 0 0 16px 0;
+            overflow: hidden;
+        }
+        .targeta-img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+        }
+        .targeta-content { padding: 16px; }
+        .file-link {
+            background: #0d1117;
+            color: white;
+            text-decoration: none;
+            padding: 10px;
+            border-radius: 40px;
+            display: block;
+            text-align: center;
+            margin-top: 8px;
+        }
+        .empty-folder {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 50px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 60px;
+        }
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #475569;
+        }
+    </style>
+</head>
+<body>
+    <!-- Pantalla de login obligatoria -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-container">
+            <h1><i class="fas fa-lock"></i> Acceso Archivos-2</h1>
+            <input type="text" class="login-input" id="loginUsername" placeholder="Usuario" autocomplete="off">
+            <input type="password" class="login-input" id="loginPassword" placeholder="Contraseña">
+            <button class="login-btn" id="loginActionBtn"><i class="fas fa-sign-in-alt"></i> Ingresar</button>
+            <div class="login-switch" id="loginSwitch">
+                ¿No tienes cuenta? <span>Regístrate aquí</span>
+            </div>
+            <div class="login-error" id="loginError"></div>
+        </div>
+    </div>
+
+    <!-- Aplicación principal (visible después del login) -->
+    <div class="app-container" id="appContainer">
+        <div class="user-bar">
+            <div class="user-info">
+                <div class="user-avatar"><i class="fas fa-user" id="userIcon"></i></div>
+                <span id="userName">Invitado</span>
+                <span class="user-role" id="userRole">visitante</span>
+            </div>
+            <div class="auth-buttons">
+                <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</button>
+            </div>
+        </div>
+
+        <div class="tabs-header" id="tabContainer"></div>
+        <div id="dynamicContent"></div>
+        <footer>📁 Actualización global en tiempo real · <span id="updateCounter">0</span> usuarios activos</footer>
+    </div>
+
+    <script>
+        (function() {
+            // ========== CONFIGURACIÓN GLOBAL ==========
+            const GITHUB_OWNER = 'cyframlab-cyber';
+            const GITHUB_REPO = 'Archivos-2';
+            const GITHUB_BRANCH = 'main';
+
+            const CATEGORIAS = [
+                { id: 'targeta', nombre: 'Targeta', icono: 'fa-id-card' },
+                { id: 'documento1', nombre: 'Documento 1', icono: 'fa-file-alt' },
+                { id: 'documento2', nombre: 'Documento 2', icono: 'fa-file-pdf' },
+                { id: 'documento3', nombre: 'Documento 3', icono: 'fa-file-word' },
+                { id: 'documento4', nombre: 'Documento 4', icono: 'fa-file-archive' }
+            ];
+            const ADMIN_TAB = { id: 'admin', nombre: '👑 Admin', icono: 'fa-crown' };
+
+            // ========== ESTADO GLOBAL ==========
+            let users = JSON.parse(localStorage.getItem('app_users')) || [];
+            let currentUser = null;
+            let currentTab = 'targeta';
+            let archivosPorCategoria = {};
+            let githubToken = localStorage.getItem('github_token') || '';
+            let tokenValido = false;
+            let tabStyles = JSON.parse(localStorage.getItem('tab_styles')) || {};
+
+            // Crear admin por defecto
+            if (users.length === 0) {
+                users.push({ username: 'admin', password: 'admin123', role: 'admin', active: false, lastSeen: null });
+                localStorage.setItem('app_users', JSON.stringify(users));
+            }
+
+            // ========== REFERENCIAS DOM ==========
+            const loginScreen = document.getElementById('loginScreen');
+            const appContainer = document.getElementById('appContainer');
+            const loginUsername = document.getElementById('loginUsername');
+            const loginPassword = document.getElementById('loginPassword');
+            const loginActionBtn = document.getElementById('loginActionBtn');
+            const loginSwitch = document.getElementById('loginSwitch');
+            const loginError = document.getElementById('loginError');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const userName = document.getElementById('userName');
+            const userRole = document.getElementById('userRole');
+            const tabContainer = document.getElementById('tabContainer');
+            const dynamicContent = document.getElementById('dynamicContent');
+            const updateCounter = document.getElementById('updateCounter');
+
+            let isLoginMode = true;
+
+            // ========== FUNCIONES DE USUARIO ==========
+            function updateUserUI() {
+                if (currentUser) {
+                    userName.textContent = currentUser.username;
+                    userRole.textContent = currentUser.role === 'admin' ? 'Administrador' : 'Usuario';
+                    userRole.style.background = currentUser.role === 'admin' ? '#f59e0b' : '#2dba4e';
+                } else {
+                    userName.textContent = 'Invitado';
+                    userRole.textContent = 'visitante';
+                    userRole.style.background = '#0d1117';
+                }
+            }
+
+            function getActiveUsers() {
+                const fiveMinAgo = Date.now() - 5 * 60000;
+                return users.filter(u => u.active && new Date(u.lastSeen).getTime() > fiveMinAgo);
+            }
+
+            function updateActiveCounter() {
+                updateCounter.textContent = getActiveUsers().length;
+            }
+
+            // Login
+            function login(username, password) {
+                const user = users.find(u => u.username === username && u.password === password);
+                if (user) {
+                    currentUser = { ...user };
+                    // Marcar como activo
+                    users = users.map(u => {
+                        if (u.username === username) {
+                            u.active = true;
+                            u.lastSeen = new Date().toISOString();
+                        }
+                        return u;
+                    });
+                    localStorage.setItem('app_users', JSON.stringify(users));
+                    
+                    // Ocultar login y mostrar app
+                    loginScreen.classList.add('hidden');
+                    appContainer.classList.add('visible');
+                    
+                    updateUserUI();
+                    renderTabs();
+                    renderContent();
+                    return true;
+                }
+                return false;
+            }
+
+            // Registro
+            function register(username, password) {
+                if (users.find(u => u.username === username)) {
+                    loginError.textContent = '❌ El usuario ya existe';
+                    return false;
+                }
+                const newUser = {
+                    username,
+                    password,
+                    role: 'user',
+                    active: true,
+                    lastSeen: new Date().toISOString()
+                };
+                users.push(newUser);
+                localStorage.setItem('app_users', JSON.stringify(users));
+                currentUser = { ...newUser };
+                
+                loginScreen.classList.add('hidden');
+                appContainer.classList.add('visible');
+                
+                updateUserUI();
+                renderTabs();
+                renderContent();
+                return true;
+            }
+
+            // Logout
+            function logout() {
+                if (currentUser) {
+                    users = users.map(u => {
+                        if (u.username === currentUser.username) {
+                            u.active = false;
+                        }
+                        return u;
+                    });
+                    localStorage.setItem('app_users', JSON.stringify(users));
+                }
+                currentUser = null;
+                
+                // Volver a pantalla de login
+                appContainer.classList.remove('visible');
+                loginScreen.classList.remove('hidden');
+                loginUsername.value = '';
+                loginPassword.value = '';
+                loginError.textContent = '';
+            }
+
+            // ========== FUNCIONES GITHUB ==========
+            async function requestGitHub(endpoint, options = {}) {
+                const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}${endpoint}`;
+                const headers = {
+                    'Accept': 'application/vnd.github.v3+json',
+                    ...(githubToken ? { 'Authorization': `token ${githubToken}` } : {})
+                };
+                return await fetch(url, { ...options, headers });
+            }
+
+            async function verifyToken(token) {
+                if (!token) return false;
+                try {
+                    const res = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}`, {
+                        headers: { 'Authorization': `token ${token}` }
+                    });
+                    return res.ok;
+                } catch {
+                    return false;
+                }
+            }
+
+            async function fetchFilesInFolder(folderPath) {
+                try {
+                    const res = await requestGitHub(`/contents/${folderPath}?ref=${GITHUB_BRANCH}`);
+                    if (res.status === 404) return [];
+                    const data = await res.json();
+                    if (!Array.isArray(data)) return [];
+                    return data.filter(item => item.type === 'file').map(f => ({
+                        name: f.name,
+                        download_url: f.download_url,
+                        sha: f.sha,
+                        path: f.path
+                    }));
+                } catch {
+                    return [];
+                }
+            }
+
+            async function loadAllCategories() {
+                const promises = CATEGORIAS.map(cat => fetchFilesInFolder(cat.id));
+                const results = await Promise.all(promises);
+                CATEGORIAS.forEach((cat, idx) => {
+                    archivosPorCategoria[cat.id] = results[idx] || [];
+                });
+                if (currentTab !== ADMIN_TAB.id) {
+                    renderPublicTab(currentTab);
+                }
+                updateActiveCounter();
+            }
+
+            async function uploadFileToFolder(file, folder) {
+                if (!tokenValido) { 
+                    alert('❌ Conecta un token válido en el panel Admin');
+                    return false; 
+                }
+                const path = `${folder}/${file.name}`;
+                const reader = new FileReader();
+                const contentBase64 = await new Promise((resolve) => {
+                    reader.onload = () => resolve(reader.result.split(',')[1]);
+                    reader.readAsDataURL(file);
+                });
+
+                let sha = null;
+                try {
+                    const res = await requestGitHub(`/contents/${path}?ref=${GITHUB_BRANCH}`);
+                    if (res.ok) sha = (await res.json()).sha;
+                } catch { }
+
+                const body = {
+                    message: `Subir ${file.name} a ${folder}`,
+                    content: contentBase64,
+                    branch: GITHUB_BRANCH,
+                    ...(sha && { sha })
+                };
+
+                try {
+                    const res = await requestGitHub(`/contents/${path}`, { method: 'PUT', body: JSON.stringify(body) });
+                    return res.ok;
+                } catch {
+                    return false;
+                }
+            }
+
+            async function crearTarjeta(titulo, parrafo, imagenFile) {
+                if (!tokenValido) { 
+                    alert('❌ Conecta un token válido primero');
+                    return false; 
+                }
+
+                const imagenPath = `targeta/${imagenFile.name}`;
+                const readerImg = new FileReader();
+                const imgBase64 = await new Promise(resolve => {
+                    readerImg.onload = () => resolve(readerImg.result.split(',')[1]);
+                    readerImg.readAsDataURL(imagenFile);
+                });
+
+                let imgSha = null;
+                try {
+                    const res = await requestGitHub(`/contents/${imagenPath}?ref=${GITHUB_BRANCH}`);
+                    if (res.ok) imgSha = (await res.json()).sha;
+                } catch { }
+
+                await requestGitHub(`/contents/${imagenPath}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        message: `Imagen: ${imagenFile.name}`,
+                        content: imgBase64,
+                        branch: GITHUB_BRANCH,
+                        ...(imgSha && { sha: imgSha })
+                    })
+                });
+
+                const nombreBase = imagenFile.name.split('.').slice(0, -1).join('.') || 'tarjeta';
+                const metadataContent = `TITULO: ${titulo}\nPARRAFO: ${parrafo}\nIMAGEN: ${imagenFile.name}`;
+                const metadataFile = new File([metadataContent], `${nombreBase}_metadata.txt`, { type: 'text/plain' });
+
+                const readerMeta = new FileReader();
+                const metaBase64 = await new Promise(resolve => {
+                    readerMeta.onload = () => resolve(readerMeta.result.split(',')[1]);
+                    readerMeta.readAsDataURL(metadataFile);
+                });
+
+                let metaSha = null;
+                const metaPath = `targeta/${metadataFile.name}`;
+                try {
+                    const res = await requestGitHub(`/contents/${metaPath}?ref=${GITHUB_BRANCH}`);
+                    if (res.ok) metaSha = (await res.json()).sha;
+                } catch { }
+
+                await requestGitHub(`/contents/${metaPath}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        message: `Metadata: ${titulo}`,
+                        content: metaBase64,
+                        branch: GITHUB_BRANCH,
+                        ...(metaSha && { sha: metaSha })
+                    })
+                });
+
+                return true;
+            }
+
+            // ========== RENDERIZADO ==========
+            function renderTabs() {
+                let html = '';
+                CATEGORIAS.forEach(cat => {
+                    const estilo = tabStyles[cat.id] || {};
+                    const bgColor = estilo.bgColor || '#e6f0ff';
+                    const colorTexto = estilo.textColor || '#1a2639';
+                    const bgImage = estilo.bgImage ? `url(${estilo.bgImage})` : 'none';
+                    const opacity = estilo.opacity ?? 0.7;
+                    const nombre = estilo.nombre || cat.nombre;
+                    const activa = (currentTab === cat.id) ? 'activa' : '';
+                    html += `<button class="tab-btn ${activa}" data-tab="${cat.id}" 
+                        style="background: ${bgColor}; color: ${colorTexto}; background-image: ${bgImage}; background-size: cover; opacity: ${opacity};">
+                        <i class="fas ${cat.icono}"></i> ${nombre}
+                    </button>`;
+                });
+                
+                if (currentUser && currentUser.role === 'admin') {
+                    const activaAdmin = (currentTab === ADMIN_TAB.id) ? 'activa' : '';
+                    html += `<button class="tab-btn admin-tab ${activaAdmin}" data-tab="${ADMIN_TAB.id}">
+                        <i class="fas ${ADMIN_TAB.icono}"></i> ${ADMIN_TAB.nombre}
+                    </button>`;
+                }
+
+                tabContainer.innerHTML = html;
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        currentTab = btn.dataset.tab;
+                        renderTabs();
+                        renderContent();
+                    });
+                });
+            }
+
+            function renderPublicTab(tabId) {
+                const files = archivosPorCategoria[tabId] || [];
+                if (files.length === 0) {
+                    dynamicContent.innerHTML = `<div class="empty-folder"><i class="fas fa-folder-open"></i> No hay archivos</div>`;
+                    return;
+                }
+
+                if (tabId === 'targeta') {
+                    const imagenes = files.filter(f => /\.(jpg|jpeg|png|gif|svg|webp)$/i.test(f.name));
+                    const metadatos = files.filter(f => f.name.endsWith('_metadata.txt'));
+
+                    let gridHtml = '';
+                    imagenes.forEach(img => {
+                        const baseName = img.name.split('.').slice(0, -1).join('.');
+                        const meta = metadatos.find(m => m.name.startsWith(baseName + '_metadata'));
+                        let titulo = 'Tarjeta';
+                        if (meta) titulo = meta.name.replace('_metadata.txt', '').replace(/_/g, ' ');
+                        gridHtml += `
+                        <div class="targeta-card">
+                            <img src="${img.download_url}" class="targeta-img">
+                            <div class="targeta-content">
+                                <div class="targeta-titulo">${titulo}</div>
+                                <a href="${img.download_url}" class="file-link">Ver imagen</a>
+                            </div>
+                        </div>`;
+                    });
+                    dynamicContent.innerHTML = `<div class="files-grid">${gridHtml}</div>`;
+                } else {
+                    let gridHtml = '';
+                    files.forEach(f => {
+                        gridHtml += `
+                        <div class="targeta-card" style="padding:20px;">
+                            <i class="fas fa-file" style="font-size:3rem;"></i>
+                            <div>${f.name}</div>
+                            <a href="${f.download_url}" class="file-link">Descargar</a>
+                        </div>`;
+                    });
+                    dynamicContent.innerHTML = `<div class="files-grid">${gridHtml}</div>`;
+                }
+            }
+
+            function renderAdminPanel() {
+                const activeUsers = getActiveUsers();
+                let usersTable = '';
+                users.forEach(user => {
+                    const isActive = activeUsers.some(au => au.username === user.username);
+                    usersTable += `
+                    <tr>
+                        <td><span class="${isActive ? 'status-active' : 'status-inactive'}"></span>${user.username}</td>
+                        <td>${user.role}</td>
+                        <td>${isActive ? 'Activo' : 'Inactivo'}</td>
+                        <td>${user.lastSeen ? new Date(user.lastSeen).toLocaleTimeString() : '-'}</td>
+                    </tr>`;
+                });
+
+                let catOptions = '';
+                CATEGORIAS.forEach(c => {
+                    catOptions += `<label class="radio-option"><input type="radio" name="destinoDoc" value="${c.id}"> ${c.nombre}</label>`;
+                });
+
+                dynamicContent.innerHTML = `
+                    <div class="config-panel">
+                        <div class="token-connector">
+                            <input type="password" id="githubToken" placeholder="Token GitHub" value="${githubToken}">
+                            <button class="connect-btn" id="connectToken">Conectar</button>
+                            <span class="connection-badge" id="tokenStatus">${tokenValido ? '✅ Conectado' : '❌ Desconectado'}</span>
+                        </div>
+
+                        <div class="users-section">
+                            <h3><i class="fas fa-users"></i> Usuarios (${users.length}) · Activos: ${activeUsers.length}</h3>
+                            <table class="users-table">
+                                <thead><tr><th>Usuario</th><th>Rol</th><th>Estado</th><th>Última vez</th></tr></thead>
+                                <tbody>${usersTable}</tbody>
+                            </table>
+                        </div>
+
+                        <div class="config-section">
+                            <div class="config-card">
+                                <h3>Personalizar pestañas</h3>
+                                <select id="tabSelector">${CATEGORIAS.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('')}</select>
+                                <input type="text" id="styleName" placeholder="Nombre">
+                                <input type="color" id="styleBg" value="#e6f0ff">
+                                <input type="text" id="styleImage" placeholder="URL imagen fondo">
+                                <input type="range" id="styleOpacity" min="0.1" max="1" step="0.05" value="0.75">
+                                <input type="color" id="styleText" value="#1a2639">
+                                <button class="primary-btn" id="applyStyle">Aplicar</button>
+                            </div>
+
+                            <div class="config-card">
+                                <h3>Crear tarjeta</h3>
+                                <input type="text" id="cardTitle" placeholder="Título">
+                                <textarea id="cardText" placeholder="Párrafo"></textarea>
+                                <input type="file" id="cardImage" accept="image/*">
+                                <button class="primary-btn" id="createCard">Guardar</button>
+                            </div>
+
+                            <div class="config-card">
+                                <h3>Subir documento</h3>
+                                <input type="file" id="docFile">
+                                <div class="radio-group">${catOptions}</div>
+                                <button class="primary-btn" id="uploadDoc">Subir</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('connectToken').addEventListener('click', async () => {
+                    const token = document.getElementById('githubToken').value;
+                    tokenValido = await verifyToken(token);
+                    if (tokenValido) {
+                        githubToken = token;
+                        localStorage.setItem('github_token', token);
+                        document.getElementById('tokenStatus').textContent = '✅ Conectado';
+                    } else {
+                        alert('Token inválido');
+                    }
+                });
+
+                document.getElementById('applyStyle').addEventListener('click', () => {
+                    const tab = document.getElementById('tabSelector').value;
+                    tabStyles[tab] = {
+                        nombre: document.getElementById('styleName').value,
+                        bgColor: document.getElementById('styleBg').value,
+                        bgImage: document.getElementById('styleImage').value,
+                        opacity: parseFloat(document.getElementById('styleOpacity').value),
+                        textColor: document.getElementById('styleText').value
+                    };
+                    localStorage.setItem('tab_styles', JSON.stringify(tabStyles));
+                    renderTabs();
+                });
+
+                document.getElementById('createCard').addEventListener('click', async () => {
+                    const title = document.getElementById('cardTitle').value;
+                    const text = document.getElementById('cardText').value;
+                    const img = document.getElementById('cardImage').files[0];
+                    if (await crearTarjeta(title, text, img)) {
+                        alert('Tarjeta creada');
+                        loadAllCategories();
+                    }
+                });
+
+                document.getElementById('uploadDoc').addEventListener('click', async () => {
+                    const file = document.getElementById('docFile').files[0];
+                    const dest = document.querySelector('input[name="destinoDoc"]:checked')?.value;
+                    if (await uploadFileToFolder(file, dest)) {
+                        alert('Archivo subido');
+                        loadAllCategories();
+                    }
+                });
+            }
+
+            function renderContent() {
+                if (currentTab === ADMIN_TAB.id && currentUser?.role === 'admin') {
+                    renderAdminPanel();
+                } else {
+                    renderPublicTab(currentTab);
+                }
+            }
+
+            // ========== EVENTOS ==========
+            loginSwitch.addEventListener('click', () => {
+                isLoginMode = !isLoginMode;
+                loginActionBtn.innerHTML = isLoginMode ? '<i class="fas fa-sign-in-alt"></i> Ingresar' : '<i class="fas fa-user-plus"></i> Registrarse';
+                loginSwitch.innerHTML = isLoginMode ? '¿No tienes cuenta? <span>Regístrate aquí</span>' : '¿Ya tienes cuenta? <span>Login aquí</span>';
+                loginError.textContent = '';
+            });
+
+            loginActionBtn.addEventListener('click', () => {
+                const username = loginUsername.value.trim();
+                const password = loginPassword.value.trim();
+                if (!username || !password) {
+                    loginError.textContent = '❌ Completa todos los campos';
+                    return;
+                }
+                if (isLoginMode) {
+                    if (!login(username, password)) {
+                        loginError.textContent = '❌ Usuario o contraseña incorrectos';
+                    }
+                } else {
+                    register(username, password);
+                }
+            });
+
+            logoutBtn.addEventListener('click', logout);
+
+            // Enter en inputs de login
+            loginPassword.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') loginActionBtn.click();
+            });
+
+            // Auto-actualización global cada 10 segundos
+            setInterval(async () => {
+                if (currentUser) {
+                    users = users.map(u => {
+                        if (u.username === currentUser.username) {
+                            u.lastSeen = new Date().toISOString();
+                            u.active = true;
+                        }
+                        return u;
+                    });
+                    localStorage.setItem('app_users', JSON.stringify(users));
+                }
+                await loadAllCategories();
+            }, 10000);
+
+            // Inicialización: verificar token guardado
+            (async function init() {
+                if (githubToken) {
+                    tokenValido = await verifyToken(githubToken);
+                    if (!tokenValido) {
+                        localStorage.removeItem('github_token');
+                        githubToken = '';
+                    }
+                }
+                // No mostramos la app hasta que alguien haga login
+            })();
+        })();
+    </script>
+</body>
+</html>
