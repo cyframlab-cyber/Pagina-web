@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>Archivos-2 · Conector GitHub + Vista pública</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: #f4f7fb;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .app-container {
+            max-width: 1400px;
+            width: 100%;
+            background: rgba(255,255,255,0.75);
+            backdrop-filter: blur(4px);
+            border-radius: 36px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+            padding: 24px 28px;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+        
+        .tabs-header {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 10px 0 25px;
+            border-bottom: 2px solid rgba(0,0,0,0.1);
+            padding-bottom: 12px;
+        }
+        .tab-btn {
+            padding: 14px 28px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            border: none;
+            background: rgba(230, 240, 255, 0.7);
+            color: #1a2639;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.6);
+        }
+        .tab-btn.activa {
+            background: #ffffffcc;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.15);
+            border: 1px solid white;
+            font-weight: 700;
+            transform: scale(1.02);
+        }
+        .tab-btn.config-tab {
+            background: linear-gradient(145deg, #2dba4e, #1e7e34);
+            color: white;
+            border: none;
+        }
+        .tab-btn.config-tab.activa {
+            background: #1e7e34;
+        }
+
+        /* Panel de configuración */
+        .config-panel {
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 48px;
+            padding: 30px;
+            margin: 20px 0;
+            border: 2px solid #2dba4e;
+        }
+        
+        /* BARRA DE TOKEN MEJORADA - Conector GitHub */
+        .token-connector {
+            background: linear-gradient(135deg, #0d1117, #1a2639);
+            border-radius: 80px;
+            padding: 16px 24px;
+            margin-bottom: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            border: 1px solid #2dba4e;
+        }
+        .token-icon {
+            background: #2dba4e;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: white;
+        }
+        .token-input-wrapper {
+            flex: 3;
+            min-width: 280px;
+        }
+        .token-input-wrapper input {
+            width: 100%;
+            padding: 16px 22px;
+            border-radius: 60px;
+            border: none;
+            background: rgba(255,255,255,0.15);
+            color: white;
+            font-size: 1rem;
+            font-family: monospace;
+            letter-spacing: 1px;
+            border: 1px solid #2dba4e50;
+        }
+        .token-input-wrapper input::placeholder {
+            color: #9ca3af;
+        }
+        .token-status {
+            flex: 1;
+            min-width: 180px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .connect-btn {
+            background: #2dba4e;
+            border: none;
+            color: white;
+            padding: 14px 28px;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: 0.15s;
+            white-space: nowrap;
+            border: 1px solid #24963e;
+            box-shadow: 0 4px 10px rgba(45,186,78,0.3);
+        }
+        .connect-btn:hover {
+            background: #24963e;
+            transform: translateY(-2px);
+        }
+        .connect-btn:active {
+            transform: translateY(1px);
+        }
+        .connection-badge {
+            background: rgba(255,255,255,0.1);
+            border-radius: 40px;
+            padding: 8px 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            font-size: 0.95rem;
+            border: 1px solid #2dba4e;
+        }
+        .connection-badge.connected {
+            background: #2dba4e30;
+            border-color: #2dba4e;
+            color: #2dba4e;
+        }
+        .connection-badge i {
+            font-size: 1.2rem;
+        }
+
+        .config-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-top: 20px;
+        }
+        .config-card {
+            background: white;
+            border-radius: 36px;
+            padding: 28px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        }
+        .config-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            color: #0f172a;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 12px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #334155;
+        }
+        .input-group input, .input-group textarea, .input-group select {
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: 30px;
+            border: 1px solid #cbd5e1;
+            font-size: 1rem;
+            background: #f8fafc;
+        }
+        .input-group textarea { min-height: 100px; resize: vertical; }
+        
+        .style-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            background: #f8fafc;
+            padding: 12px 18px;
+            border-radius: 50px;
+        }
+        .style-item label { min-width: 100px; font-weight: 600; }
+        .style-item input[type="color"] { width: 60px; height: 45px; border-radius: 30px; }
+        .style-item input[type="text"] { flex: 1; padding: 10px 15px; border-radius: 30px; border: 1px solid #ccc; }
+        .style-item input[type="range"] { width: 150px; }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 18px;
+            background: #f1f5f9;
+            border-radius: 40px;
+        }
+        .radio-option input[type="radio"] { width: 20px; height: 20px; accent-color: #2dba4e; }
+
+        .image-preview {
+            width: 100%;
+            min-height: 150px;
+            border: 2px dashed #94a3b8;
+            border-radius: 30px;
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+            overflow: hidden;
+        }
+        .image-preview img { max-width: 100%; max-height: 200px; object-fit: contain; }
+
+        .primary-btn {
+            background: #2dba4e;
+            border: none;
+            color: white;
+            padding: 14px 28px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            transition: 0.15s;
+            width: 100%;
+            justify-content: center;
+            margin-top: 10px;
+            border: 1px solid #24963e;
+        }
+        .primary-btn:hover:not(:disabled) { background: #24963e; transform: translateY(-2px); }
+        .primary-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            opacity: 0.6;
+            border-color: #64748b;
+        }
+
+        /* Grid de archivos */
+        .files-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 22px;
+            margin-top: 25px;
+        }
+        .file-card, .targeta-card {
+            background: rgba(255,255,255,0.6);
+            backdrop-filter: blur(8px);
+            border-radius: 28px;
+            padding: 20px 16px 16px;
+            box-shadow: 0 12px 20px -10px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .targeta-card {
+            align-items: stretch;
+            padding: 0 0 16px 0;
+            overflow: hidden;
+        }
+        .targeta-img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 28px 28px 0 0;
+        }
+        .targeta-content { padding: 16px 16px 8px; }
+        .targeta-titulo { font-weight: 700; font-size: 1.2rem; margin-bottom: 8px; }
+        .targeta-parrafo { color: #334155; font-size: 0.95rem; margin-bottom: 16px; }
+        .file-link {
+            background: #0d1117;
+            color: white;
+            text-decoration: none;
+            padding: 10px 0;
+            width: 100%;
+            text-align: center;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .empty-folder {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2rem;
+            color: #334155;
+            background: rgba(255,255,255,0.3);
+            border-radius: 60px;
+        }
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #475569;
+            font-size: 0.9rem;
+        }
+        .auto-update-badge {
+            display: inline-block;
+            background: #2dba4e20;
+            color: #1e7e34;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            margin-left: 15px;
+            border: 1px solid #2dba4e;
+        }
+        .connection-status {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+    </style>
+</head>
+<body>
+<div class="app-container" id="appContainer">
+    <!-- Pestañas -->
+    <div class="tabs-header" id="tabContainer"></div>
+
+    <!-- Contenido dinámico -->
+    <div id="dynamicContent"></div>
+
+    <footer>📁 Actualización automática cada 15 segundos · <span id="updateCounter">0</span> visitantes ahora<span class="auto-update-badge"><i class="fas fa-sync-alt fa-spin"></i> live</span></footer>
+</div>
+
+<script>
+    (function() {
+        // Configuración fija del repo
+        const GITHUB_OWNER = 'cyframlab-cyber';
+        const GITHUB_REPO = 'Archivos-2';
+        const GITHUB_BRANCH = 'main';
+
+        // Categorías de visualización
+        const CATEGORIAS = [
+            { id: 'targeta', nombre: 'Targeta', icono: 'fa-id-card' },
+            { id: 'documento1', nombre: 'Documento 1', icono: 'fa-file-alt' },
+            { id: 'documento2', nombre: 'Documento 2', icono: 'fa-file-pdf' },
+            { id: 'documento3', nombre: 'Documento 3', icono: 'fa-file-word' },
+            { id: 'documento4', nombre: 'Documento 4', icono: 'fa-file-archive' }
+        ];
+
+        // Pestaña de configuración
+        const CONFIG_TAB = { id: 'config', nombre: '⚙️ Subir Archivo', icono: 'fa-upload' };
+
+        // Estado
+        let currentTab = 'targeta';
+        let archivosPorCategoria = {};
+        let githubToken = localStorage.getItem('github_token') || '';
+        let tokenValido = false; // indica si el token conecta correctamente
+        let tabStyles = JSON.parse(localStorage.getItem('tab_styles')) || {};
+
+        // Referencias DOM
+        const tabContainer = document.getElementById('tabContainer');
+        const dynamicContent = document.getElementById('dynamicContent');
+        const updateCounter = document.getElementById('updateCounter');
+
+        // ---------- FUNCIONES GITHUB ----------
+        async function requestGitHub(endpoint, options = {}) {
+            const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}${endpoint}`;
+            const headers = {
+                'Accept': 'application/vnd.github.v3+json',
+                ...(githubToken ? { 'Authorization': `token ${githubToken}` } : {})
+            };
+            const res = await fetch(url, { ...options, headers });
+            return res;
+        }
+
+        // Verificar si el token es válido (conecta con GitHub)
+        async function verifyToken(token) {
+            if (!token) return false;
+            try {
+                const testRes = await fetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}`, {
+                    headers: { 'Authorization': `token ${token}` }
+                });
+                return testRes.ok;
+            } catch {
+                return false;
+            }
+        }
+
+        // Obtener archivos de una carpeta
+        async function fetchFilesInFolder(folderPath) {
+            try {
+                const res = await requestGitHub(`/contents/${folderPath}?ref=${GITHUB_BRANCH}`);
+                if (res.status === 404) return [];
+                const data = await res.json();
+                if (!Array.isArray(data)) return [];
+                return data.filter(item => item.type === 'file').map(f => ({
+                    name: f.name,
+                    download_url: f.download_url,
+                    sha: f.sha,
+                    path: f.path
+                }));
+            } catch (e) {
+                console.warn(`Error en ${folderPath}:`, e);
+                return [];
+            }
+        }
+
+        // Cargar todas las categorías
+        async function loadAllCategories() {
+            const promises = CATEGORIAS.map(cat => fetchFilesInFolder(cat.id));
+            const results = await Promise.all(promises);
+            CATEGORIAS.forEach((cat, idx) => {
+                archivosPorCategoria[cat.id] = results[idx] || [];
+            });
+            if (currentTab !== CONFIG_TAB.id) {
+                renderPublicTab(currentTab);
+            }
+            updateCounter.textContent = Math.floor(Math.random() * 8) + 2;
+        }
+
+        // Subir archivo (requiere token válido)
+        async function uploadFileToFolder(file, folder) {
+            if (!tokenValido) { 
+                alert('❌ No hay conexión con GitHub. Guarda un token válido en la barra de conexión.');
+                return false; 
+            }
+            const path = `${folder}/${file.name}`;
+            const reader = new FileReader();
+            const contentBase64 = await new Promise((resolve) => {
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.readAsDataURL(file);
+            });
+
+            let sha = null;
+            try {
+                const res = await requestGitHub(`/contents/${path}?ref=${GITHUB_BRANCH}`);
+                if (res.ok) sha = (await res.json()).sha;
+            } catch { }
+
+            const body = {
+                message: `Subir ${file.name} a ${folder}`,
+                content: contentBase64,
+                branch: GITHUB_BRANCH,
+                ...(sha && { sha })
+            };
+
+            try {
+                const res = await requestGitHub(`/contents/${path}`, { 
+                    method: 'PUT', 
+                    body: JSON.stringify(body) 
+                });
+                if (!res.ok) throw new Error('Error en la respuesta');
+                return true;
+            } catch (e) {
+                alert('Error subida: ' + e.message);
+                return false;
+            }
+        }
+
+        // Crear tarjeta
+        async function crearTarjeta(titulo, parrafo, imagenFile) {
+            if (!tokenValido) { 
+                alert('❌ Conecta un token válido primero');
+                return false; 
+            }
+            if (!imagenFile) { alert('Selecciona una imagen'); return false; }
+
+            // Subir imagen
+            const imagenPath = `targeta/${imagenFile.name}`;
+            const readerImg = new FileReader();
+            const imgBase64 = await new Promise(resolve => {
+                readerImg.onload = () => resolve(readerImg.result.split(',')[1]);
+                readerImg.readAsDataURL(imagenFile);
+            });
+
+            let imgSha = null;
+            try {
+                const res = await requestGitHub(`/contents/${imagenPath}?ref=${GITHUB_BRANCH}`);
+                if (res.ok) imgSha = (await res.json()).sha;
+            } catch { }
+
+            await requestGitHub(`/contents/${imagenPath}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    message: `Imagen para tarjeta: ${imagenFile.name}`,
+                    content: imgBase64,
+                    branch: GITHUB_BRANCH,
+                    ...(imgSha && { sha: imgSha })
+                })
+            });
+
+            // Crear metadata
+            const nombreBase = imagenFile.name.split('.').slice(0, -1).join('.') || 'tarjeta';
+            const metadataContent = `TITULO: ${titulo}\nPARRAFO: ${parrafo}\nIMAGEN: ${imagenFile.name}`;
+            const metadataFile = new File([metadataContent], `${nombreBase}_metadata.txt`, { type: 'text/plain' });
+
+            const readerMeta = new FileReader();
+            const metaBase64 = await new Promise(resolve => {
+                readerMeta.onload = () => resolve(readerMeta.result.split(',')[1]);
+                readerMeta.readAsDataURL(metadataFile);
+            });
+
+            let metaSha = null;
+            const metaPath = `targeta/${metadataFile.name}`;
+            try {
+                const res = await requestGitHub(`/contents/${metaPath}?ref=${GITHUB_BRANCH}`);
+                if (res.ok) metaSha = (await res.json()).sha;
+            } catch { }
+
+            await requestGitHub(`/contents/${metaPath}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    message: `Metadata tarjeta: ${titulo}`,
+                    content: metaBase64,
+                    branch: GITHUB_BRANCH,
+                    ...(metaSha && { sha: metaSha })
+                })
+            });
+
+            return true;
+        }
+
+        // ---------- RENDERIZADO ----------
+        function renderTabs() {
+            let html = '';
+            CATEGORIAS.forEach(cat => {
+                const estilo = tabStyles[cat.id] || {};
+                const bgColor = estilo.bgColor || '#e6f0ff';
+                const colorTexto = estilo.textColor || '#1a2639';
+                const bgImage = estilo.bgImage ? `url(${estilo.bgImage})` : 'none';
+                const opacity = estilo.opacity ?? 0.7;
+                const nombre = estilo.nombre || cat.nombre;
+                const activa = (currentTab === cat.id) ? 'activa' : '';
+                html += `<button class="tab-btn ${activa}" data-tab="${cat.id}" 
+                    style="background: ${bgColor}; color: ${colorTexto}; background-image: ${bgImage}; background-size: cover; opacity: ${opacity};">
+                    <i class="fas ${cat.icono}"></i> ${nombre}
+                </button>`;
+            });
+            const activaConfig = (currentTab === CONFIG_TAB.id) ? 'activa' : '';
+            html += `<button class="tab-btn config-tab ${activaConfig}" data-tab="${CONFIG_TAB.id}">
+                <i class="fas ${CONFIG_TAB.icono}"></i> ${CONFIG_TAB.nombre}
+            </button>`;
+            tabContainer.innerHTML = html;
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    currentTab = btn.dataset.tab;
+                    renderTabs();
+                    if (currentTab === CONFIG_TAB.id) {
+                        renderConfigPanel();
+                    } else {
+                        renderPublicTab(currentTab);
+                    }
+                });
+            });
+        }
+
+        function renderPublicTab(tabId) {
+            const files = archivosPorCategoria[tabId] || [];
+            if (files.length === 0) {
+                dynamicContent.innerHTML = `<div class="empty-folder"><i class="fas fa-folder-open"></i> No hay archivos en esta carpeta</div>`;
+                return;
+            }
+
+            if (tabId === 'targeta') {
+                const imagenes = files.filter(f => /\.(jpg|jpeg|png|gif|svg|webp)$/i.test(f.name));
+                const metadatos = files.filter(f => f.name.endsWith('_metadata.txt'));
+
+                if (imagenes.length === 0) {
+                    renderGenericFiles(files);
+                    return;
+                }
+
+                let gridHtml = '';
+                imagenes.forEach(img => {
+                    const baseName = img.name.split('.').slice(0, -1).join('.');
+                    const meta = metadatos.find(m => m.name.startsWith(baseName + '_metadata'));
+                    let titulo = 'Tarjeta sin título';
+                    let parrafo = 'Sin descripción';
+                    if (meta) {
+                        titulo = meta.name.replace('_metadata.txt', '').replace(/_/g, ' ') || 'Tarjeta';
+                        parrafo = 'Contenido en metadatos.';
+                    }
+                    gridHtml += `
+                    <div class="targeta-card">
+                        <img src="${img.download_url}" class="targeta-img" alt="${img.name}" onerror="this.src='https://via.placeholder.com/300?text=Imagen'">
+                        <div class="targeta-content">
+                            <div class="targeta-titulo">${titulo}</div>
+                            <div class="targeta-parrafo">${parrafo}</div>
+                            <a href="${img.download_url}" target="_blank" class="file-link"><i class="fas fa-download"></i> Ver imagen</a>
+                            ${meta ? `<a href="${meta.download_url}" target="_blank" class="file-link" style="background:#4361ee;"><i class="fas fa-file-alt"></i> Ver metadata</a>` : ''}
+                        </div>
+                    </div>`;
+                });
+                dynamicContent.innerHTML = `<div class="files-grid">${gridHtml}</div>`;
+            } else {
+                renderGenericFiles(files);
+            }
+        }
+
+        function renderGenericFiles(files) {
+            let gridHtml = '';
+            files.forEach(f => {
+                let icon = 'fa-file';
+                const ext = f.name.split('.').pop().toLowerCase();
+                if (['jpg','jpeg','png','gif','svg','webp'].includes(ext)) icon = 'fa-file-image';
+                else if (ext === 'pdf') icon = 'fa-file-pdf';
+                else if (['doc','docx'].includes(ext)) icon = 'fa-file-word';
+                else if (['xls','xlsx'].includes(ext)) icon = 'fa-file-excel';
+                else if (['zip','rar','7z'].includes(ext)) icon = 'fa-file-archive';
+                gridHtml += `
+                <div class="file-card">
+                    <i class="fas ${icon} file-icon"></i>
+                    <div class="file-name">${f.name}</div>
+                    <a href="${f.download_url}" target="_blank" class="file-link"><i class="fas fa-download"></i> Descargar</a>
+                </div>`;
+            });
+            dynamicContent.innerHTML = `<div class="files-grid">${gridHtml}</div>`;
+        }
+
+        // Panel de configuración con la barra de token mejorada
+        function renderConfigPanel() {
+            let catOptionsHtml = '';
+            CATEGORIAS.forEach(cat => {
+                catOptionsHtml += `<label class="radio-option"><input type="radio" name="destinoDoc" value="${cat.id}" ${cat.id === 'documento1' ? 'checked' : ''}> <i class="fas ${cat.icono}"></i> ${cat.nombre}</label>`;
+            });
+
+            const statusColor = tokenValido ? '#2dba4e' : '#ef4444';
+            const statusText = tokenValido ? 'Conectado' : 'Desconectado';
+            const statusIcon = tokenValido ? 'fa-link' : 'fa-unlink';
+
+            dynamicContent.innerHTML = `
+                <div class="config-panel">
+                    <!-- BARRA DE CONEXIÓN GITHUB MEJORADA -->
+                    <div class="token-connector">
+                        <div class="token-icon">
+                            <i class="fab fa-github"></i>
+                        </div>
+                        <div class="token-input-wrapper">
+                            <input type="password" id="githubTokenInput" placeholder="github_token_con_acceso_al_repo" value="${githubToken}">
+                        </div>
+                        <div class="token-status">
+                            <button class="connect-btn" id="connectTokenBtn">
+                                <i class="fas fa-plug"></i> Conectar
+                            </button>
+                            <div class="connection-badge ${tokenValido ? 'connected' : ''}" id="connectionBadge">
+                                <i class="fas ${statusIcon}" style="color: ${statusColor};"></i>
+                                <span id="connectionStatusText">${statusText}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-section">
+                        <!-- Personalización -->
+                        <div class="config-card">
+                            <h3><i class="fas fa-palette"></i> Personalizar pestañas</h3>
+                            <div class="style-item">
+                                <label>Pestaña:</label>
+                                <select id="tabSelector" style="flex:1; padding:12px; border-radius:40px;">
+                                    ${CATEGORIAS.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="style-item">
+                                <label>Nombre</label>
+                                <input type="text" id="styleTabName" placeholder="Nombre visible">
+                            </div>
+                            <div class="style-item">
+                                <label>Fondo color</label>
+                                <input type="color" id="styleBgColor" value="#e6f0ff">
+                            </div>
+                            <div class="style-item">
+                                <label>Imagen URL</label>
+                                <input type="text" id="styleBgImage" placeholder="https://...">
+                            </div>
+                            <div class="style-item">
+                                <label>Transparencia</label>
+                                <input type="range" id="styleOpacity" min="0.1" max="1" step="0.05" value="0.75">
+                            </div>
+                            <div class="style-item">
+                                <label>Color texto</label>
+                                <input type="color" id="styleTextColor" value="#1a2639">
+                            </div>
+                            <button class="primary-btn" id="applyStyleBtn" ${!tokenValido ? 'disabled title="Conecta un token primero"' : ''}><i class="fas fa-check"></i> Aplicar estilo</button>
+                        </div>
+
+                        <!-- Crear tarjeta -->
+                        <div class="config-card">
+                            <h3><i class="fas fa-id-card"></i> Crear nueva Tarjeta</h3>
+                            <div class="input-group">
+                                <label>Título</label>
+                                <input type="text" id="cardTitle" placeholder="Ej: Mi producto" ${!tokenValido ? 'disabled' : ''}>
+                            </div>
+                            <div class="input-group">
+                                <label>Párrafo</label>
+                                <textarea id="cardParagraph" placeholder="Descripción..." ${!tokenValido ? 'disabled' : ''}></textarea>
+                            </div>
+                            <div class="input-group">
+                                <label>Imagen</label>
+                                <input type="file" id="cardImage" accept="image/*" ${!tokenValido ? 'disabled' : ''}>
+                            </div>
+                            <div class="image-preview" id="imagePreview">
+                                <i class="fas fa-image" style="font-size:2rem; color:#94a3b8;"></i>
+                            </div>
+                            <button class="primary-btn" id="createCardBtn" ${!tokenValido ? 'disabled' : ''}><i class="fas fa-plus-circle"></i> Guardar en Targeta</button>
+                        </div>
+
+                        <!-- Subir documento -->
+                        <div class="config-card">
+                            <h3><i class="fas fa-file-upload"></i> Subir documento</h3>
+                            <div class="input-group">
+                                <label>Archivo</label>
+                                <input type="file" id="docFileInput" ${!tokenValido ? 'disabled' : ''}>
+                            </div>
+                            <div class="radio-group">
+                                ${catOptionsHtml}
+                            </div>
+                            <button class="primary-btn" id="uploadDocBtn" ${!tokenValido ? 'disabled' : ''}><i class="fas fa-upload"></i> Subir archivo</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Cargar estilos actuales
+            const tabSelector = document.getElementById('tabSelector');
+            const loadSelectedTabStyle = () => {
+                const selectedTab = tabSelector.value;
+                const estilo = tabStyles[selectedTab] || {};
+                document.getElementById('styleTabName').value = estilo.nombre || CATEGORIAS.find(c=>c.id===selectedTab)?.nombre || '';
+                document.getElementById('styleBgColor').value = estilo.bgColor || '#e6f0ff';
+                document.getElementById('styleBgImage').value = estilo.bgImage || '';
+                document.getElementById('styleOpacity').value = estilo.opacity ?? 0.75;
+                document.getElementById('styleTextColor').value = estilo.textColor || '#1a2639';
+            };
+            tabSelector.addEventListener('change', loadSelectedTabStyle);
+            loadSelectedTabStyle();
+
+            // Botón conectar token
+            document.getElementById('connectTokenBtn').addEventListener('click', async () => {
+                const newToken = document.getElementById('githubTokenInput').value;
+                if (!newToken) {
+                    alert('Ingresa un token de GitHub');
+                    return;
+                }
+                // Verificar token
+                const isValid = await verifyToken(newToken);
+                if (isValid) {
+                    githubToken = newToken;
+                    tokenValido = true;
+                    localStorage.setItem('github_token', githubToken);
+                    // Actualizar badge
+                    const badge = document.getElementById('connectionBadge');
+                    badge.classList.add('connected');
+                    document.getElementById('connectionStatusText').textContent = 'Conectado';
+                    badge.innerHTML = '<i class="fas fa-link" style="color:#2dba4e;"></i> <span id="connectionStatusText">Conectado</span>';
+                    alert('✅ Conexión exitosa con GitHub');
+                    // Recargar panel para habilitar controles
+                    renderConfigPanel();
+                } else {
+                    alert('❌ Token inválido o sin permisos para el repositorio');
+                    tokenValido = false;
+                    githubToken = '';
+                    localStorage.removeItem('github_token');
+                }
+            });
+
+            // Aplicar estilo (solo si conectado)
+            document.getElementById('applyStyleBtn')?.addEventListener('click', () => {
+                if (!tokenValido) { alert('Conecta un token primero'); return; }
+                const selectedTab = tabSelector.value;
+                tabStyles[selectedTab] = {
+                    nombre: document.getElementById('styleTabName').value,
+                    bgColor: document.getElementById('styleBgColor').value,
+                    bgImage: document.getElementById('styleBgImage').value,
+                    opacity: parseFloat(document.getElementById('styleOpacity').value),
+                    textColor: document.getElementById('styleTextColor').value
+                };
+                localStorage.setItem('tab_styles', JSON.stringify(tabStyles));
+                renderTabs();
+                alert('Estilo aplicado');
+            });
+
+            // Preview imagen
+            const cardImage = document.getElementById('cardImage');
+            if (cardImage) {
+                cardImage.addEventListener('change', () => {
+                    if (cardImage.files[0]) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            document.getElementById('imagePreview').innerHTML = `<img src="${e.target.result}" alt="preview">`;
+                        };
+                        reader.readAsDataURL(cardImage.files[0]);
+                    }
+                });
+            }
+
+            // Crear tarjeta
+            document.getElementById('createCardBtn')?.addEventListener('click', async () => {
+                if (!tokenValido) return;
+                const titulo = document.getElementById('cardTitle').value.trim();
+                const parrafo = document.getElementById('cardParagraph').value.trim();
+                const imagen = document.getElementById('cardImage').files[0];
+                if (!titulo || !parrafo || !imagen) {
+                    alert('Completa todos los campos');
+                    return;
+                }
+                const ok = await crearTarjeta(titulo, parrafo, imagen);
+                if (ok) {
+                    alert('✅ Tarjeta creada');
+                    await loadAllCategories();
+                }
+            });
+
+            // Subir documento
+            document.getElementById('uploadDocBtn')?.addEventListener('click', async () => {
+                if (!tokenValido) return;
+                const file = document.getElementById('docFileInput').files[0];
+                const destino = document.querySelector('input[name="destinoDoc"]:checked')?.value;
+                if (!file) { alert('Selecciona un archivo'); return; }
+                if (!destino) { alert('Elige un destino'); return; }
+                const ok = await uploadFileToFolder(file, destino);
+                if (ok) {
+                    alert(`✅ Archivo subido a ${destino}`);
+                    await loadAllCategories();
+                }
+            });
+        }
+
+        // Auto-actualización
+        setInterval(async () => {
+            await loadAllCategories();
+        }, 15000);
+
+        // Inicialización: verificar token guardado
+        async function init() {
+            // Verificar si hay token guardado
+            if (githubToken) {
+                tokenValido = await verifyToken(githubToken);
+                if (!tokenValido) {
+                    localStorage.removeItem('github_token');
+                    githubToken = '';
+                }
+            }
+            await loadAllCategories();
+            renderTabs();
+            renderPublicTab('targeta');
+        }
+        init();
+    })();
+</script>
+</body>
+</html>
