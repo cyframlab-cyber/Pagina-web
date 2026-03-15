@@ -1,0 +1,2549 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Sistema de Gestión con Sincronización GitHub</title>
+    <style>
+        /* ===== RESET Y ESTILOS BASE ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        /* ===== PANTALLA DE LOGIN ===== */
+        .login-container {
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 400px;
+            animation: slideIn 0.5s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-header-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #667eea;
+        }
+
+        .login-header-text {
+            color: #2c3e50;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-subtitle {
+            color: #34495e;
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-bottom: 1rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+
+        .btn-github {
+            background: linear-gradient(135deg, #24292e 0%, #0d1117 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* ===== PANTALLA PRINCIPAL ===== */
+        .main-app {
+            display: none;
+            min-height: 100vh;
+            width: 100%;
+        }
+
+        .main-app.show {
+            display: block;
+        }
+
+        /* ===== HEADER ===== */
+        .app-header {
+            background: #2c3e50;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            color: white;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-menu-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .header-menu-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+        }
+
+        .header-icon {
+            font-size: 2rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #f39c12;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            overflow: hidden;
+            border: 2px solid white;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: white;
+        }
+
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+
+        /* ===== CONTENEDOR PRINCIPAL ===== */
+        .app-container {
+            display: flex;
+            margin-top: 70px;
+            min-height: calc(100vh - 70px);
+            width: 100%;
+        }
+
+        /* ===== SIDEBAR ===== */
+        .app-sidebar {
+            width: 280px;
+            background: #2c3e50;
+            padding: 2rem 0;
+            position: fixed;
+            height: calc(100vh - 70px);
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            z-index: 999;
+            color: white;
+        }
+
+        .app-sidebar.hidden {
+            transform: translateX(-100%);
+        }
+
+        .app-sidebar.show-mobile {
+            transform: translateX(0);
+        }
+
+        .app-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+            transition: margin-left 0.3s ease;
+            width: 100%;
+        }
+
+        .app-content.expanded {
+            margin-left: 0;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu li {
+            padding: 1rem 2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+        }
+
+        .sidebar-menu li:hover {
+            background-color: rgba(255,255,255,0.1);
+            border-left-color: #f39c12;
+        }
+
+        .sidebar-menu li.active {
+            border-left-color: #f39c12;
+            background-color: rgba(255,255,255,0.15);
+        }
+
+        .tab-submenu {
+            list-style: none;
+            background-color: rgba(0,0,0,0.2);
+            margin: 0;
+            padding: 0;
+            display: none;
+        }
+
+        .tab-submenu.show {
+            display: block;
+        }
+
+        .tab-submenu li {
+            padding: 0.8rem 3rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95rem;
+            color: white;
+        }
+
+        .tab-submenu li:hover {
+            background-color: rgba(255,255,255,0.15);
+        }
+
+        .tab-submenu li.active {
+            background-color: rgba(243, 156, 18, 0.3);
+            border-left-color: #f39c12;
+        }
+
+        .admin-submenu {
+            list-style: none;
+            background-color: rgba(0,0,0,0.2);
+            margin: 0;
+            padding: 0;
+        }
+
+        .admin-submenu li {
+            padding: 0.8rem 3rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .admin-submenu li:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        /* ===== SECCIONES ===== */
+        .section-card {
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            animation: fadeIn 0.5s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-title {
+            color: #2c3e50;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #ecf0f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        /* ===== TARJETAS PUBLICITARIAS ===== */
+        .advertising-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        .ad-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            border: 1px solid #e0e0e0;
+            height: fit-content;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .ad-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .ad-media {
+            width: 100%;
+            max-height: 250px;
+            overflow: hidden;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ad-media img,
+        .ad-media video,
+        .ad-media audio {
+            width: 100%;
+            max-height: 250px;
+            object-fit: cover;
+        }
+
+        .ad-media audio {
+            padding: 1rem;
+        }
+
+        .ad-content {
+            padding: 1.5rem;
+            flex: 1;
+        }
+
+        .ad-title {
+            font-size: 1.3rem;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .ad-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .ad-link {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: transform 0.3s;
+            margin-top: 0.5rem;
+        }
+
+        .ad-link:hover {
+            transform: translateX(5px);
+        }
+
+        .ad-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #ecf0f1;
+            flex-wrap: wrap;
+        }
+
+        .ad-actions button {
+            flex: 1;
+            padding: 0.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            min-width: 80px;
+        }
+
+        /* ===== DOCUMENTOS ===== */
+        .documentos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        .documento-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 1.5rem;
+            color: white;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+            transition: transform 0.3s;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .documento-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .documento-card h3 {
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            word-break: break-word;
+        }
+
+        .documento-card .categoria {
+            display: inline-block;
+            padding: 0.3rem 1rem;
+            background-color: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .documento-card .subcategoria {
+            display: inline-block;
+            padding: 0.2rem 0.8rem;
+            background-color: rgba(243, 156, 18, 0.3);
+            border-radius: 15px;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+        }
+
+        .documento-card .fecha {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 1rem;
+        }
+
+        .acciones-documento {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: auto;
+        }
+
+        .btn-doc {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            flex: 1;
+            min-width: 80px;
+        }
+
+        .btn-ver {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .btn-descargar {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .btn-editar {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        .btn-eliminar {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        /* ===== VISOR PDF ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 2000;
+            overflow-y: auto;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 900px;
+            position: relative;
+            animation: slideUp 0.3s ease;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-close {
+            position: absolute;
+            right: 1.5rem;
+            top: 1.5rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: #e74c3c;
+        }
+
+        .modal h2 {
+            color: #2c3e50;
+            margin-bottom: 2rem;
+        }
+
+        .pdf-viewer {
+            width: 100%;
+            height: 600px;
+            border: none;
+            border-radius: 10px;
+            margin-top: 1rem;
+        }
+
+        /* ===== GITHUB SYNC ===== */
+        .github-connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .github-status-connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .github-status-disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .github-status-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        .github-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .github-buttons .btn {
+            flex: 1;
+            min-width: 150px;
+            margin: 0;
+        }
+
+        .auto-sync-status {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideInRight 0.3s ease;
+        }
+
+        .auto-sync-status.warning {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        }
+
+        .auto-sync-status.error {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .realtime-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #24292e;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            z-index: 1002;
+            animation: slideInRight 0.3s ease;
+            max-width: 350px;
+            border-left: 4px solid #2ea44f;
+        }
+
+        .realtime-notification.error {
+            border-left-color: #cb2431;
+        }
+
+        .realtime-notification.warning {
+            border-left-color: #f39c12;
+        }
+
+        .realtime-notification .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .realtime-notification .close-btn:hover {
+            color: white;
+        }
+
+        /* ===== ADMIN ONLY ===== */
+        .admin-only {
+            display: none;
+        }
+
+        body.admin .admin-only {
+            display: block;
+        }
+
+        body.admin .admin-inline {
+            display: inline-block;
+        }
+
+        /* ===== VERSIÓN MÓVIL ===== */
+        @media (max-width: 768px) {
+            .login-container {
+                margin: 1rem auto;
+                width: 95%;
+                padding: 2rem 1.5rem;
+            }
+
+            .login-header-text {
+                font-size: 1.5rem;
+            }
+
+            .login-subtitle {
+                font-size: 1.2rem;
+            }
+
+            .app-sidebar {
+                transform: translateX(-100%);
+                z-index: 999;
+                width: 85%;
+                max-width: 300px;
+            }
+
+            .app-sidebar.show-mobile {
+                transform: translateX(0);
+            }
+
+            .app-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .app-header {
+                padding: 0.8rem 1rem;
+            }
+
+            .header-title {
+                font-size: 1.2rem;
+            }
+
+            .header-icon {
+                font-size: 1.5rem;
+            }
+
+            .user-info {
+                gap: 0.8rem;
+            }
+
+            .user-name {
+                display: none;
+            }
+
+            .user-avatar {
+                width: 35px;
+                height: 35px;
+                font-size: 1.2rem;
+            }
+
+            .logout-btn {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.9rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .advertising-grid,
+            .documentos-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                margin: 2% auto;
+                padding: 1.5rem;
+                width: 95%;
+            }
+
+            .github-buttons {
+                flex-direction: column;
+            }
+
+            .github-buttons .btn {
+                width: 100%;
+            }
+
+            .auto-sync-status {
+                top: 70px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+                font-size: 0.8rem;
+            }
+
+            .realtime-notification {
+                left: 10px;
+                right: 10px;
+                max-width: none;
+            }
+
+            .section-card {
+                padding: 1.5rem;
+            }
+
+            .section-title {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body id="bodyElement">
+    <!-- Pantalla de Login -->
+    <div class="login-container" id="loginScreen">
+        <div class="login-header">
+            <div class="login-header-icon">📚</div>
+            <h1 class="login-header-text">Sistema de Gestión</h1>
+            <h2 class="login-subtitle">Iniciar Sesión</h2>
+        </div>
+        
+        <div class="form-group">
+            <label for="carnet">Carnet:</label>
+            <input type="text" id="carnet" placeholder="Ingrese su carnet" onkeypress="handleKeyPress(event)">
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Contraseña:</label>
+            <input type="password" id="password" placeholder="Ingrese su contraseña" onkeypress="handleKeyPress(event)">
+        </div>
+        
+        <button class="btn btn-primary" id="loginBtn" onclick="login()">Iniciar Sesión</button>
+        <button class="btn btn-secondary" id="registerBtn" onclick="showRegisterForm()">Registrarse</button>
+    </div>
+
+    <!-- Pantalla Principal -->
+    <div class="main-app" id="mainApp">
+        <header class="app-header" id="appHeader">
+            <div class="header-left">
+                <button class="header-menu-btn" id="headerMenuBtn" onclick="toggleSidebar()" title="Ocultar/Mostrar menú">
+                    ☰
+                </button>
+                <div class="header-title">
+                    <span class="header-icon">📚</span>
+                    <span id="headerText">Sistema de Gestión de Documentos</span>
+                </div>
+            </div>
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">👤</div>
+                <span class="user-name" id="userDisplay"></span>
+                <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
+            </div>
+        </header>
+
+        <div class="app-container">
+            <aside class="app-sidebar" id="appSidebar">
+                <ul class="sidebar-menu" id="sidebarMenu">
+                    <li onclick="goToHome()"><i>🏠</i> Inicio</li>
+                    
+                    <li onclick="toggleTabSubmenu('documentos')"><i>📄</i> Documentos ▼</li>
+                    <ul class="tab-submenu" id="submenu-documentos">
+                        <li onclick="changeSection('documentos', 'generales')"><i>📁</i> Generales</li>
+                        <li onclick="changeSection('documentos', 'informes')"><i>📊</i> Informes</li>
+                        <li onclick="changeSection('documentos', 'guias')"><i>📋</i> Guías</li>
+                    </ul>
+                    
+                    <li onclick="toggleTabSubmenu('recursos')"><i>📚</i> Recursos ▼</li>
+                    <ul class="tab-submenu" id="submenu-recursos">
+                        <li onclick="changeSection('recursos', 'generales')"><i>📁</i> Generales</li>
+                        <li onclick="changeSection('recursos', 'manuales')"><i>📖</i> Manuales</li>
+                        <li onclick="changeSection('recursos', 'tutoriales')"><i>🎥</i> Tutoriales</li>
+                    </ul>
+                    
+                    <li onclick="toggleTabSubmenu('manuales')"><i>📖</i> Manuales ▼</li>
+                    <ul class="tab-submenu" id="submenu-manuales">
+                        <li onclick="changeSection('manuales', 'generales')"><i>📁</i> Generales</li>
+                        <li onclick="changeSection('manuales', 'tecnicos')"><i>⚙️</i> Técnicos</li>
+                        <li onclick="changeSection('manuales', 'usuario')"><i>👤</i> Usuario</li>
+                    </ul>
+                    
+                    <li onclick="toggleTabSubmenu('formularios')"><i>📝</i> Formularios ▼</li>
+                    <ul class="tab-submenu" id="submenu-formularios">
+                        <li onclick="changeSection('formularios', 'generales')"><i>📁</i> Generales</li>
+                        <li onclick="changeSection('formularios', 'solicitudes')"><i>📋</i> Solicitudes</li>
+                        <li onclick="changeSection('formularios', 'reportes')"><i>📊</i> Reportes</li>
+                    </ul>
+                    
+                    <li class="admin-only" onclick="toggleAdminSubmenu()" style="background-color: rgba(243,156,18,0.2);">
+                        <i>⚙️</i> Administración ▼
+                    </li>
+                    <ul class="admin-submenu admin-only" id="adminSubmenu" style="display: none;">
+                        <li onclick="changeSection('admin-publicidad')"><i>📢</i> Publicidad</li>
+                        <li onclick="changeSection('admin-usuarios')"><i>👥</i> Usuarios</li>
+                        <li onclick="changeSection('admin-documentos')"><i>📊</i> Documentos</li>
+                        <li onclick="openGitHubModal()"><i class="fab fa-github"></i> Sincronización GitHub</li>
+                    </ul>
+                </ul>
+            </aside>
+
+            <main class="app-content" id="appContent">
+                <!-- El contenido se carga dinámicamente -->
+            </main>
+        </div>
+    </div>
+
+    <!-- Modales -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('registerModal')">&times;</span>
+            <h2>Registro de Nuevo Usuario</h2>
+            <div class="form-group">
+                <label>Carnet:</label>
+                <input type="text" id="newCarnet" placeholder="Ingrese su carnet">
+            </div>
+            <div class="form-group">
+                <label>Contraseña:</label>
+                <input type="password" id="newPassword" placeholder="Ingrese su contraseña">
+            </div>
+            <div class="form-group">
+                <label>PIN de Registro:</label>
+                <input type="password" id="registerPin" placeholder="Ingrese el PIN">
+            </div>
+            <button class="btn btn-success" onclick="registerUser()">Registrarse</button>
+        </div>
+    </div>
+
+    <div id="adModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('adModal')">&times;</span>
+            <h2 id="adModalTitle">Nueva Tarjeta Publicitaria</h2>
+            
+            <div class="form-group">
+                <label>Título:</label>
+                <input type="text" id="adTitle" placeholder="Ingrese el título">
+            </div>
+            
+            <div class="form-group">
+                <label>Descripción:</label>
+                <textarea id="adDescription" rows="3" placeholder="Ingrese la descripción"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Enlace (opcional):</label>
+                <input type="url" id="adLink" placeholder="https://ejemplo.com">
+            </div>
+            
+            <div class="form-group">
+                <label>Tipo de Medio:</label>
+                <select id="adMediaType" onchange="toggleMediaInput()">
+                    <option value="none">Sin medio</option>
+                    <option value="image">Imagen</option>
+                    <option value="video">Video</option>
+                    <option value="audio">Audio</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="mediaInputGroup" style="display: none;">
+                <label id="mediaLabel">Seleccionar archivo:</label>
+                <input type="file" id="adMediaFile" accept="image/*,video/*,audio/*">
+            </div>
+            
+            <div id="mediaPreview" class="form-group" style="display: none;"></div>
+            
+            <button class="btn btn-success" onclick="saveAd()">Guardar Tarjeta</button>
+        </div>
+    </div>
+
+    <div id="documentModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('documentModal')">&times;</span>
+            <h2 id="documentModalTitle">Subir Documento</h2>
+            <div class="form-group">
+                <label>Título:</label>
+                <input type="text" id="docTitle" placeholder="Ingrese el título">
+            </div>
+            <div class="form-group">
+                <label>Pestaña:</label>
+                <select id="docMainCategory" onchange="loadSubCategories()"></select>
+            </div>
+            <div class="form-group">
+                <label>Subpestaña:</label>
+                <select id="docSubCategory"></select>
+            </div>
+            <div class="form-group">
+                <label>Archivo PDF:</label>
+                <input type="file" id="docFile" accept=".pdf">
+            </div>
+            <button class="btn btn-success" onclick="saveDocument()">Guardar Documento</button>
+        </div>
+    </div>
+
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal('userModal')">&times;</span>
+            <h2 id="userModalTitle">Nuevo Usuario</h2>
+            <div class="form-group">
+                <label>Carnet:</label>
+                <input type="text" id="userCarnet" placeholder="Ingrese el carnet">
+            </div>
+            <div class="form-group">
+                <label>Contraseña:</label>
+                <input type="text" id="userPassword" placeholder="Ingrese la contraseña">
+            </div>
+            <div class="form-group">
+                <label>Rol:</label>
+                <select id="userRole">
+                    <option value="usuario">Usuario Normal</option>
+                    <option value="admin">Administrador</option>
+                </select>
+            </div>
+            <button class="btn btn-success" onclick="saveUser()">Guardar Usuario</button>
+        </div>
+    </div>
+
+    <div id="pdfViewerModal" class="modal">
+        <div class="modal-content" style="max-width: 1000px;">
+            <span class="modal-close" onclick="closeModal('pdfViewerModal')">&times;</span>
+            <h2 id="pdfViewerTitle">Visor PDF</h2>
+            <iframe id="pdfViewerFrame" class="pdf-viewer" src=""></iframe>
+        </div>
+    </div>
+
+    <div id="githubModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="modal-close" onclick="closeModal('githubModal')">&times;</span>
+            <h2><i class="fab fa-github"></i> Configuración de Sincronización</h2>
+            
+            <div class="github-connection-status" id="githubConnectionStatus">
+                <i class="fas fa-circle"></i> No conectado
+            </div>
+            
+            <div class="form-group">
+                <label>Token de GitHub:</label>
+                <input type="password" id="githubToken" placeholder="Ingrese su token de GitHub" value="">
+                <small style="color: #666;">Token con permisos para leer/escribir en el repositorio</small>
+            </div>
+            
+            <div class="form-group">
+                <label>Repositorio:</label>
+                <input type="text" id="githubRepo" value="cyframlab-cyber/Archivos-3" readonly>
+            </div>
+            
+            <div class="github-buttons">
+                <button class="btn btn-github" onclick="connectGitHub()">
+                    <i class="fas fa-plug"></i> CONECTAR Y GUARDAR
+                </button>
+            </div>
+            
+            <div id="githubMessage" style="margin-top: 1rem; padding: 1rem; border-radius: 5px; display: none;"></div>
+        </div>
+    </div>
+
+    <div id="autoSyncStatus" class="auto-sync-status" style="display: none;">
+        <i class="fas fa-sync fa-spin"></i>
+        <span id="autoSyncMessage">Sincronizando...</span>
+    </div>
+
+    <script>
+        // ===== VARIABLES GLOBALES =====
+        let documentos = JSON.parse(localStorage.getItem('documentos')) || [];
+        let publicidad = JSON.parse(localStorage.getItem('publicidad')) || [];
+        let usuarios = JSON.parse(localStorage.getItem('usuarios')) || [];
+        let currentUser = null;
+        let coordinatorPin = localStorage.getItem('coordinatorPin') || '1234';
+        let sidebarVisible = true;
+        let currentMainTab = 'inicio';
+        let currentSubTab = null;
+        let editingAdId = null;
+        let editingDocId = null;
+        let editingUserId = null;
+
+        // Variables de GitHub
+        let githubToken = localStorage.getItem('githubToken') || '';
+        let githubRepo = 'cyframlab-cyber/Archivos-3';
+        let githubConnected = false;
+        let lastSyncTime = localStorage.getItem('lastSyncTime') || 0;
+        let syncInterval = null;
+        let syncInProgress = false;
+        let isOnline = navigator.onLine;
+        let pendingChanges = false;
+
+        const ADMIN_CREDENTIALS = {
+            carnet: 'admin',
+            password: 'admin123'
+        };
+
+        // Configuración fija de pestañas
+        const TABS = {
+            documentos: {
+                name: 'Documentos',
+                icon: '📄',
+                subTabs: {
+                    generales: { name: 'Generales', icon: '📁' },
+                    informes: { name: 'Informes', icon: '📊' },
+                    guias: { name: 'Guías', icon: '📋' }
+                }
+            },
+            recursos: {
+                name: 'Recursos',
+                icon: '📚',
+                subTabs: {
+                    generales: { name: 'Generales', icon: '📁' },
+                    manuales: { name: 'Manuales', icon: '📖' },
+                    tutoriales: { name: 'Tutoriales', icon: '🎥' }
+                }
+            },
+            manuales: {
+                name: 'Manuales',
+                icon: '📖',
+                subTabs: {
+                    generales: { name: 'Generales', icon: '📁' },
+                    tecnicos: { name: 'Técnicos', icon: '⚙️' },
+                    usuario: { name: 'Usuario', icon: '👤' }
+                }
+            },
+            formularios: {
+                name: 'Formularios',
+                icon: '📝',
+                subTabs: {
+                    generales: { name: 'Generales', icon: '📁' },
+                    solicitudes: { name: 'Solicitudes', icon: '📋' },
+                    reportes: { name: 'Reportes', icon: '📊' }
+                }
+            }
+        };
+
+        // ===== INICIALIZACIÓN =====
+        function init() {
+            if (!usuarios.some(u => u.carnet === ADMIN_CREDENTIALS.carnet)) {
+                usuarios.push({
+                    carnet: ADMIN_CREDENTIALS.carnet,
+                    password: ADMIN_CREDENTIALS.password,
+                    role: 'admin'
+                });
+                localStorage.setItem('usuarios', JSON.stringify(usuarios));
+            }
+
+            updateStats();
+            startAutoSync();
+            
+            window.addEventListener('online', handleOnlineStatus);
+            window.addEventListener('offline', handleOnlineStatus);
+            
+            if (githubToken) {
+                connectGitHubWithToken();
+            }
+        }
+
+        // ===== FUNCIONES DE SINCRONIZACIÓN =====
+        function handleOnlineStatus() {
+            isOnline = navigator.onLine;
+            if (isOnline) {
+                showSyncStatus('📶 Conexión restaurada', 'success');
+                if (githubConnected && currentUser) {
+                    setTimeout(() => checkForUpdates(), 2000);
+                }
+            } else {
+                showSyncStatus('📡 Sin conexión a internet', 'warning');
+            }
+        }
+
+        function startAutoSync() {
+            if (syncInterval) clearInterval(syncInterval);
+            
+            syncInterval = setInterval(() => {
+                if (githubConnected && currentUser && isOnline && !syncInProgress) {
+                    checkForUpdates();
+                }
+            }, 5000);
+            
+            console.log('Sincronización automática iniciada (cada 5 segundos)');
+        }
+
+        async function checkForUpdates() {
+            if (syncInProgress || !isOnline) return;
+            
+            const now = Date.now();
+            if (now - lastSyncTime < 3000) return;
+            
+            syncInProgress = true;
+            
+            try {
+                const response = await fetch(`https://api.github.com/repos/${githubRepo}/contents/data.json`, {
+                    headers: {
+                        'Authorization': `token ${githubToken}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    signal: AbortSignal.timeout(8000)
+                });
+                
+                if (!response.ok) {
+                    syncInProgress = false;
+                    return;
+                }
+                
+                const file = await response.json();
+                const content = JSON.parse(atob(file.content));
+                
+                if (content.timestamp > lastSyncTime) {
+                    showSyncStatus('📥 Detectando cambios, actualizando...', 'warning');
+                    await pullFromGitHub();
+                } else if (pendingChanges) {
+                    await pushToGitHub();
+                    pendingChanges = false;
+                }
+                
+            } catch (error) {
+                console.error('Error checking for updates:', error);
+            } finally {
+                syncInProgress = false;
+            }
+        }
+
+        async function pushToGitHub() {
+            if (!githubConnected || !currentUser || !isOnline || syncInProgress) return;
+            
+            syncInProgress = true;
+            showSyncStatus('📤 Subiendo cambios a GitHub...', 'info');
+            
+            try {
+                const syncData = {
+                    timestamp: Date.now(),
+                    user: currentUser.carnet,
+                    documentos: documentos,
+                    publicidad: publicidad,
+                    usuarios: usuarios.map(u => ({
+                        carnet: u.carnet,
+                        role: u.role
+                    }))
+                };
+                
+                const content = btoa(unescape(encodeURIComponent(JSON.stringify(syncData, null, 2))));
+                
+                const checkResponse = await fetch(`https://api.github.com/repos/${githubRepo}/contents/data.json`, {
+                    headers: {
+                        'Authorization': `token ${githubToken}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                
+                let sha = null;
+                if (checkResponse.ok) {
+                    const existing = await checkResponse.json();
+                    sha = existing.sha;
+                }
+                
+                const response = await fetch(`https://api.github.com/repos/${githubRepo}/contents/data.json`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${githubToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    body: JSON.stringify({
+                        message: `Actualización por ${currentUser.carnet}`,
+                        content: content,
+                        sha: sha,
+                        branch: 'main'
+                    })
+                });
+                
+                if (response.ok) {
+                    lastSyncTime = Date.now();
+                    localStorage.setItem('lastSyncTime', lastSyncTime);
+                    showSyncStatus('✅ Cambios subidos a GitHub', 'success');
+                } else {
+                    showSyncStatus('❌ Error al subir cambios', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error en push:', error);
+                showSyncStatus('❌ Error al subir cambios', 'error');
+            } finally {
+                syncInProgress = false;
+            }
+        }
+
+        async function pullFromGitHub() {
+            if (!isOnline || syncInProgress) return;
+            
+            syncInProgress = true;
+            showSyncStatus('📥 Descargando cambios de GitHub...', 'info');
+            
+            try {
+                const response = await fetch(`https://api.github.com/repos/${githubRepo}/contents/data.json`, {
+                    headers: {
+                        'Authorization': `token ${githubToken}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    signal: AbortSignal.timeout(10000)
+                });
+                
+                if (!response.ok) {
+                    syncInProgress = false;
+                    return;
+                }
+                
+                const file = await response.json();
+                const content = decodeURIComponent(escape(atob(file.content)));
+                const data = JSON.parse(content);
+                
+                let changesDetected = false;
+                
+                if (data.documentos && JSON.stringify(documentos) !== JSON.stringify(data.documentos)) {
+                    documentos = data.documentos;
+                    localStorage.setItem('documentos', JSON.stringify(documentos));
+                    changesDetected = true;
+                }
+                
+                if (data.publicidad && JSON.stringify(publicidad) !== JSON.stringify(data.publicidad)) {
+                    publicidad = data.publicidad;
+                    localStorage.setItem('publicidad', JSON.stringify(publicidad));
+                    changesDetected = true;
+                }
+                
+                if (data.usuarios) {
+                    const nuevosUsuarios = [...usuarios];
+                    for (const uRemoto of data.usuarios) {
+                        const index = nuevosUsuarios.findIndex(u => u.carnet === uRemoto.carnet);
+                        if (index !== -1) {
+                            nuevosUsuarios[index] = {
+                                ...uRemoto,
+                                password: nuevosUsuarios[index].password
+                            };
+                        }
+                    }
+                    
+                    if (JSON.stringify(usuarios.map(u => ({carnet: u.carnet, role: u.role}))) !== 
+                        JSON.stringify(nuevosUsuarios.map(u => ({carnet: u.carnet, role: u.role})))) {
+                        usuarios = nuevosUsuarios;
+                        localStorage.setItem('usuarios', JSON.stringify(usuarios));
+                        changesDetected = true;
+                    }
+                }
+                
+                lastSyncTime = Date.now();
+                localStorage.setItem('lastSyncTime', lastSyncTime);
+                
+                if (changesDetected) {
+                    showRealtimeNotification('update', 'Se han descargado cambios de GitHub');
+                    
+                    if (currentMainTab === 'inicio') {
+                        loadAdvertising();
+                        loadLatestDocuments();
+                    } else if (currentMainTab === 'admin-publicidad') {
+                        loadAdsTable();
+                    } else if (currentMainTab === 'admin-usuarios') {
+                        loadUsersTable();
+                    } else if (currentMainTab === 'admin-documentos') {
+                        loadDocumentsTable();
+                    } else if (TABS[currentMainTab]) {
+                        loadDocumentsBySection(currentMainTab, currentSubTab);
+                    }
+                    
+                    updateStats();
+                    showSyncStatus('✅ Datos actualizados desde GitHub', 'success');
+                } else {
+                    showSyncStatus('✅ No hay cambios nuevos', 'success');
+                }
+                
+            } catch (error) {
+                console.error('Error en pull:', error);
+                showSyncStatus('❌ Error al descargar cambios', 'error');
+            } finally {
+                syncInProgress = false;
+            }
+        }
+
+        function showSyncStatus(message, type = 'success') {
+            const statusBar = document.getElementById('autoSyncStatus');
+            const messageSpan = document.getElementById('autoSyncMessage');
+            
+            messageSpan.textContent = message;
+            statusBar.className = 'auto-sync-status ' + type;
+            statusBar.style.display = 'flex';
+            
+            setTimeout(() => {
+                statusBar.style.display = 'none';
+            }, 3000);
+        }
+
+        function showRealtimeNotification(type, message) {
+            const existingNotif = document.getElementById('realtimeNotification');
+            if (existingNotif) existingNotif.remove();
+            
+            const notification = document.createElement('div');
+            notification.id = 'realtimeNotification';
+            notification.className = `realtime-notification ${type}`;
+            
+            let icon = '';
+            if (type === 'update') icon = '🔄';
+            else if (type === 'error') icon = '❌';
+            else if (type === 'warning') icon = '⚠️';
+            else icon = 'ℹ️';
+            
+            notification.innerHTML = `
+                <div class="close-btn" onclick="this.parentElement.remove()">✖</div>
+                <h4>${icon} Actualización</h4>
+                <p>${message}</p>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentElement) notification.remove();
+            }, 5000);
+        }
+
+        async function connectGitHubWithToken() {
+            if (!isOnline) return;
+            
+            try {
+                const response = await fetch('https://api.github.com/user', {
+                    headers: {
+                        'Authorization': `token ${githubToken}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    signal: AbortSignal.timeout(8000)
+                });
+                
+                if (response.ok) {
+                    githubConnected = true;
+                    console.log('GitHub conectado automáticamente');
+                    startAutoSync();
+                    setTimeout(() => pullFromGitHub(), 2000);
+                }
+            } catch (error) {
+                console.error('Error al conectar GitHub automáticamente:', error);
+            }
+        }
+
+        function openGitHubModal() {
+            if (currentUser?.role !== 'admin') {
+                alert('Solo los administradores pueden configurar la sincronización');
+                return;
+            }
+            
+            document.getElementById('githubToken').value = githubToken;
+            document.getElementById('githubConnectionStatus').className = 'github-connection-status github-status-disconnected';
+            document.getElementById('githubConnectionStatus').innerHTML = '<i class="fas fa-circle"></i> No conectado';
+            document.getElementById('githubMessage').style.display = 'none';
+            document.getElementById('githubModal').style.display = 'block';
+        }
+
+        async function connectGitHub() {
+            if (currentUser?.role !== 'admin') {
+                alert('Solo los administradores pueden configurar la sincronización');
+                return;
+            }
+            
+            const token = document.getElementById('githubToken').value;
+            
+            if (!token) {
+                mostrarMensajeGitHub('❌ Ingrese un token de GitHub', 'error');
+                return;
+            }
+            
+            const status = document.getElementById('githubConnectionStatus');
+            status.className = 'github-connection-status github-status-warning';
+            status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Conectando...';
+            
+            try {
+                const response = await fetch('https://api.github.com/user', {
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    signal: AbortSignal.timeout(8000)
+                });
+                
+                if (!response.ok) throw new Error('Token inválido');
+                
+                const user = await response.json();
+                githubToken = token;
+                localStorage.setItem('githubToken', token);
+                githubConnected = true;
+                
+                status.className = 'github-connection-status github-status-connected';
+                status.innerHTML = `<i class="fas fa-check-circle"></i> Conectado como ${user.login}`;
+                mostrarMensajeGitHub('✅ Conexión exitosa', 'success');
+                
+                showRealtimeNotification('info', 'Sincronización con GitHub activada');
+                
+                startAutoSync();
+                setTimeout(() => pushToGitHub(), 2000);
+                
+            } catch (error) {
+                githubConnected = false;
+                status.className = 'github-connection-status github-status-disconnected';
+                status.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error de conexión';
+                mostrarMensajeGitHub('❌ Error: ' + error.message, 'error');
+            }
+        }
+
+        function mostrarMensajeGitHub(texto, tipo) {
+            const message = document.getElementById('githubMessage');
+            message.style.display = 'block';
+            message.className = tipo === 'success' ? 'github-status-connected' : 'github-status-disconnected';
+            message.innerHTML = texto;
+            setTimeout(() => message.style.display = 'none', 3000);
+        }
+
+        function syncAfterSave() {
+            pendingChanges = true;
+            if (githubConnected && currentUser && isOnline && !syncInProgress) {
+                setTimeout(() => checkForUpdates(), 1000);
+            }
+        }
+
+        // ===== FUNCIONES DE INTERFAZ =====
+        function toggleSidebar() {
+            const sidebar = document.getElementById('appSidebar');
+            const content = document.getElementById('appContent');
+            
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('show-mobile');
+            } else {
+                sidebarVisible = !sidebarVisible;
+                if (sidebarVisible) {
+                    sidebar.classList.remove('hidden');
+                    content.classList.remove('expanded');
+                } else {
+                    sidebar.classList.add('hidden');
+                    content.classList.add('expanded');
+                }
+            }
+        }
+
+        function toggleTabSubmenu(tabId) {
+            const submenu = document.getElementById(`submenu-${tabId}`);
+            if (submenu) submenu.classList.toggle('show');
+        }
+
+        function toggleAdminSubmenu() {
+            const submenu = document.getElementById('adminSubmenu');
+            submenu.style.display = submenu.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function goToHome() {
+            changeSection('inicio');
+        }
+
+        function changeSection(mainTab, subTab = null) {
+            currentMainTab = mainTab;
+            currentSubTab = subTab;
+            
+            document.querySelectorAll('.sidebar-menu > li').forEach(li => li.classList.remove('active'));
+            document.querySelectorAll('.tab-submenu li').forEach(li => li.classList.remove('active'));
+            
+            if (subTab) {
+                const activeSubTab = document.querySelector(`#submenu-${mainTab} li[onclick*="'${subTab}'"]`);
+                if (activeSubTab) activeSubTab.classList.add('active');
+            } else if (mainTab !== 'inicio' && !mainTab.startsWith('admin-')) {
+                const activeTab = document.querySelector(`.sidebar-menu > li[onclick*="${mainTab}"]`);
+                if (activeTab) activeTab.classList.add('active');
+            }
+            
+            renderContent(mainTab, subTab);
+            
+            if (window.innerWidth <= 768) {
+                document.getElementById('appSidebar').classList.remove('show-mobile');
+            }
+        }
+
+        function renderContent(mainTab, subTab = null) {
+            const appContent = document.getElementById('appContent');
+            
+            if (mainTab === 'inicio') {
+                appContent.innerHTML = createHomeSection();
+                loadAdvertising();
+                loadLatestDocuments();
+            } else if (mainTab === 'admin-publicidad') {
+                appContent.innerHTML = createAdminAdsSection();
+                loadAdsTable();
+            } else if (mainTab === 'admin-usuarios') {
+                appContent.innerHTML = createAdminUsersSection();
+                loadUsersTable();
+            } else if (mainTab === 'admin-documentos') {
+                appContent.innerHTML = createAdminDocsSection();
+                loadDocumentsTable();
+            } else if (TABS[mainTab]) {
+                appContent.innerHTML = createTabSection(mainTab, subTab);
+                loadDocumentsBySection(mainTab, subTab);
+            }
+        }
+
+        function createHomeSection() {
+            return `
+                <div class="section-card">
+                    <div class="section-title">
+                        <h2>🏠 Nuestro Equipo</h2>
+                        ${currentUser?.role === 'admin' ? `
+                            <div>
+                                <button class="btn btn-success admin-inline" onclick="openAdModal()">+ Nueva Tarjeta</button>
+                                <button class="btn btn-primary admin-inline" onclick="openUploadModal()">+ Subir Documento</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalDocumentosStats">${documentos.length}</div>
+                            <div class="stat-label">Total Documentos</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalPublicidadStats">${publicidad.length}</div>
+                            <div class="stat-label">Tarjetas Publicitarias</div>
+                        </div>
+                    </div>
+                    
+                    <p style="margin: 2rem 0; padding: 1rem; background: #f8f9fa; border-radius: 10px; color: #2c3e50; line-height: 1.6;">
+                        El CIF-RAM fue creado como centro de investigación para fomentar el desarrollo académico y profesional de la comunidad educativa.
+                    </p>
+                    
+                    <h3 style="margin: 2rem 0 1rem; color: #2c3e50;">📢 Nuestra Comunidad</h3>
+                    <div id="advertisingGrid" class="advertising-grid"></div>
+                    
+                    <h3 style="margin: 2rem 0 1rem; color: #2c3e50;">📄 Documentos Recientes</h3>
+                    <div id="latestDocuments" class="documentos-grid"></div>
+                </div>
+            `;
+        }
+
+        function createTabSection(mainTab, subTab) {
+            const tab = TABS[mainTab];
+            const subTabData = subTab ? tab.subTabs[subTab] : Object.values(tab.subTabs)[0];
+            
+            return `
+                <div class="section-card">
+                    <div class="section-title">
+                        <h2>${tab.icon} ${tab.name} - ${subTabData.icon} ${subTabData.name}</h2>
+                        ${currentUser?.role === 'admin' ? `
+                            <button class="btn btn-success admin-inline" onclick="openUploadModal('${mainTab}', '${subTab || Object.keys(tab.subTabs)[0]}')">+ Subir Documento</button>
+                        ` : ''}
+                    </div>
+                    
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap;">
+                        ${Object.entries(tab.subTabs).map(([key, st]) => `
+                            <button class="btn ${key === (subTab || Object.keys(tab.subTabs)[0]) ? 'btn-primary' : 'btn-secondary'}" 
+                                    onclick="changeSection('${mainTab}', '${key}')" 
+                                    style="width: auto; padding: 0.5rem 1rem; margin: 0;">
+                                ${st.icon} ${st.name}
+                            </button>
+                        `).join('')}
+                    </div>
+                    
+                    <div id="${mainTab}_${subTab || Object.keys(tab.subTabs)[0]}List" class="documentos-grid"></div>
+                </div>
+            `;
+        }
+
+        function createAdminAdsSection() {
+            return `
+                <div class="section-card">
+                    <div class="section-title">
+                        <h2>📢 Gestión de Publicidad</h2>
+                        <button class="btn btn-success" onclick="openAdModal()">+ Nueva Tarjeta</button>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card"><div class="stat-number" id="totalAds">${publicidad.length}</div><div class="stat-label">Total Tarjetas</div></div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                    <th style="padding: 1rem; text-align: left;">Título</th>
+                                    <th style="padding: 1rem; text-align: left;">Tipo</th>
+                                    <th style="padding: 1rem; text-align: left;">Fecha</th>
+                                    <th style="padding: 1rem; text-align: left;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createAdminUsersSection() {
+            return `
+                <div class="section-card">
+                    <div class="section-title">
+                        <h2>👥 Gestión de Usuarios</h2>
+                        <button class="btn btn-success" onclick="openUserModal()">+ Nuevo Usuario</button>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card"><div class="stat-number" id="totalUsuarios">${usuarios.length}</div><div class="stat-label">Total Usuarios</div></div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                    <th style="padding: 1rem; text-align: left;">Carnet</th>
+                                    <th style="padding: 1rem; text-align: left;">Rol</th>
+                                    <th style="padding: 1rem; text-align: left;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usuariosTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createAdminDocsSection() {
+            return `
+                <div class="section-card">
+                    <div class="section-title">
+                        <h2>📊 Gestión de Documentos</h2>
+                        <button class="btn btn-success" onclick="openUploadModal()">+ Subir Documento</button>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card"><div class="stat-number" id="totalDocumentos">${documentos.length}</div><div class="stat-label">Total Documentos</div></div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                    <th style="padding: 1rem; text-align: left;">Título</th>
+                                    <th style="padding: 1rem; text-align: left;">Pestaña</th>
+                                    <th style="padding: 1rem; text-align: left;">Subpestaña</th>
+                                    <th style="padding: 1rem; text-align: left;">Fecha</th>
+                                    <th style="padding: 1rem; text-align: left;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="documentosTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ===== FUNCIONES DE LOGIN =====
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') login();
+        }
+
+        function login() {
+            const carnet = document.getElementById('carnet').value;
+            const password = document.getElementById('password').value;
+
+            if (!carnet || !password) {
+                alert('Por favor ingrese carnet y contraseña');
+                return;
+            }
+
+            const user = usuarios.find(u => u.carnet === carnet && u.password === password);
+            
+            if (user) {
+                currentUser = user;
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainApp').classList.add('show');
+                document.getElementById('userDisplay').textContent = `${user.carnet} (${user.role === 'admin' ? 'Administrador' : 'Usuario'})`;
+                
+                if (user.role === 'admin') {
+                    document.body.classList.add('admin');
+                }
+                
+                goToHome();
+                
+                if (githubConnected && isOnline && !syncInProgress) {
+                    showSyncStatus('🔄 Buscando actualizaciones...', 'info');
+                    setTimeout(() => pullFromGitHub(), 1000);
+                }
+            } else {
+                alert('Carnet o contraseña incorrectos');
+            }
+        }
+
+        function showRegisterForm() {
+            document.getElementById('registerModal').style.display = 'block';
+        }
+
+        function registerUser() {
+            const carnet = document.getElementById('newCarnet').value;
+            const password = document.getElementById('newPassword').value;
+            const pin = document.getElementById('registerPin').value;
+
+            if (!carnet || !password || !pin) {
+                alert('Complete todos los campos');
+                return;
+            }
+
+            if (pin !== coordinatorPin) {
+                alert('PIN incorrecto');
+                return;
+            }
+
+            if (usuarios.some(u => u.carnet === carnet)) {
+                alert('El carnet ya existe');
+                return;
+            }
+
+            usuarios.push({ carnet, password, role: 'usuario' });
+            localStorage.setItem('usuarios', JSON.stringify(usuarios));
+            alert('Usuario registrado');
+            closeModal('registerModal');
+            document.getElementById('newCarnet').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('registerPin').value = '';
+            
+            syncAfterSave();
+        }
+
+        function logout() {
+            currentUser = null;
+            document.body.classList.remove('admin');
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('mainApp').classList.remove('show');
+            document.getElementById('carnet').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        // ===== FUNCIONES PARA TARJETAS PUBLICITARIAS =====
+        function openAdModal() {
+            editingAdId = null;
+            document.getElementById('adModalTitle').textContent = 'Nueva Tarjeta Publicitaria';
+            document.getElementById('adTitle').value = '';
+            document.getElementById('adDescription').value = '';
+            document.getElementById('adLink').value = '';
+            document.getElementById('adMediaType').value = 'none';
+            document.getElementById('mediaInputGroup').style.display = 'none';
+            document.getElementById('mediaPreview').style.display = 'none';
+            document.getElementById('adMediaFile').value = '';
+            document.getElementById('adModal').style.display = 'block';
+        }
+
+        function editAd(id) {
+            const ad = publicidad.find(a => a.id === id);
+            if (ad) {
+                editingAdId = id;
+                document.getElementById('adModalTitle').textContent = 'Editar Tarjeta';
+                document.getElementById('adTitle').value = ad.titulo;
+                document.getElementById('adDescription').value = ad.descripcion;
+                document.getElementById('adLink').value = ad.enlace || '';
+                document.getElementById('adMediaType').value = ad.mediaType || 'none';
+                
+                if (ad.mediaType !== 'none' && ad.mediaData) {
+                    document.getElementById('mediaInputGroup').style.display = 'block';
+                    showMediaPreview(ad.mediaType, ad.mediaData);
+                }
+                
+                document.getElementById('adModal').style.display = 'block';
+            }
+        }
+
+        function deleteAd(id) {
+            if (confirm('¿Eliminar esta tarjeta?')) {
+                publicidad = publicidad.filter(ad => ad.id !== id);
+                localStorage.setItem('publicidad', JSON.stringify(publicidad));
+                
+                if (currentMainTab === 'inicio') {
+                    loadAdvertising();
+                } else if (currentMainTab === 'admin-publicidad') {
+                    loadAdsTable();
+                }
+                
+                updateStats();
+                showSyncStatus('Tarjeta eliminada', 'warning');
+                syncAfterSave();
+            }
+        }
+
+        function toggleMediaInput() {
+            const mediaType = document.getElementById('adMediaType').value;
+            const inputGroup = document.getElementById('mediaInputGroup');
+            const label = document.getElementById('mediaLabel');
+            
+            if (mediaType === 'none') {
+                inputGroup.style.display = 'none';
+                document.getElementById('mediaPreview').style.display = 'none';
+            } else {
+                inputGroup.style.display = 'block';
+                label.textContent = mediaType === 'image' ? 'Seleccionar imagen:' : 
+                                   mediaType === 'video' ? 'Seleccionar video:' : 'Seleccionar audio:';
+            }
+        }
+
+        function showMediaPreview(type, data) {
+            const preview = document.getElementById('mediaPreview');
+            preview.style.display = 'block';
+            
+            if (type === 'image') {
+                preview.innerHTML = `<img src="${data}" style="max-width: 100%; max-height: 200px; border-radius: 5px;">`;
+            } else if (type === 'video') {
+                preview.innerHTML = `<video controls style="max-width: 100%; max-height: 200px;"><source src="${data}"></video>`;
+            } else if (type === 'audio') {
+                preview.innerHTML = `<audio controls style="width: 100%;"><source src="${data}"></audio>`;
+            }
+        }
+
+        function saveAd() {
+            const titulo = document.getElementById('adTitle').value;
+            const descripcion = document.getElementById('adDescription').value;
+            const enlace = document.getElementById('adLink').value;
+            const mediaType = document.getElementById('adMediaType').value;
+            const mediaFile = document.getElementById('adMediaFile').files[0];
+
+            if (!titulo || !descripcion) {
+                alert('Complete título y descripción');
+                return;
+            }
+
+            if (mediaType !== 'none' && !mediaFile && !editingAdId) {
+                alert('Seleccione un archivo');
+                return;
+            }
+
+            if (editingAdId) {
+                const index = publicidad.findIndex(a => a.id === editingAdId);
+                if (index !== -1) {
+                    if (mediaType !== 'none' && mediaFile) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            publicidad[index] = {
+                                ...publicidad[index],
+                                titulo,
+                                descripcion,
+                                enlace,
+                                mediaType,
+                                mediaData: e.target.result
+                            };
+                            localStorage.setItem('publicidad', JSON.stringify(publicidad));
+                            closeModal('adModal');
+                            
+                            if (currentMainTab === 'inicio') loadAdvertising();
+                            else if (currentMainTab === 'admin-publicidad') loadAdsTable();
+                            
+                            updateStats();
+                            showSyncStatus('Tarjeta actualizada', 'success');
+                            syncAfterSave();
+                        };
+                        reader.readAsDataURL(mediaFile);
+                        return;
+                    } else {
+                        publicidad[index] = {
+                            ...publicidad[index],
+                            titulo,
+                            descripcion,
+                            enlace,
+                            mediaType: mediaType === 'none' ? 'none' : publicidad[index].mediaType
+                        };
+                    }
+                }
+            } else {
+                if (mediaType !== 'none' && mediaFile) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        publicidad.push({
+                            id: Date.now(),
+                            titulo,
+                            descripcion,
+                            enlace,
+                            mediaType,
+                            mediaData: e.target.result,
+                            fecha: new Date().toLocaleDateString()
+                        });
+                        localStorage.setItem('publicidad', JSON.stringify(publicidad));
+                        closeModal('adModal');
+                        
+                        if (currentMainTab === 'inicio') loadAdvertising();
+                        else if (currentMainTab === 'admin-publicidad') loadAdsTable();
+                        
+                        updateStats();
+                        showSyncStatus('Tarjeta creada', 'success');
+                        syncAfterSave();
+                    };
+                    reader.readAsDataURL(mediaFile);
+                    return;
+                } else {
+                    publicidad.push({
+                        id: Date.now(),
+                        titulo,
+                        descripcion,
+                        enlace,
+                        mediaType: 'none',
+                        mediaData: null,
+                        fecha: new Date().toLocaleDateString()
+                    });
+                }
+            }
+
+            localStorage.setItem('publicidad', JSON.stringify(publicidad));
+            closeModal('adModal');
+            
+            if (currentMainTab === 'inicio') loadAdvertising();
+            else if (currentMainTab === 'admin-publicidad') loadAdsTable();
+            
+            updateStats();
+            showSyncStatus(editingAdId ? 'Tarjeta actualizada' : 'Tarjeta creada', 'success');
+            syncAfterSave();
+        }
+
+        function loadAdvertising() {
+            const container = document.getElementById('advertisingGrid');
+            if (!container) return;
+
+            if (publicidad.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">No hay tarjetas publicitarias</p>';
+                return;
+            }
+
+            container.innerHTML = publicidad.map(ad => {
+                let mediaHtml = '';
+                if (ad.mediaType === 'image' && ad.mediaData) {
+                    mediaHtml = `<div class="ad-media"><img src="${ad.mediaData}" alt="${ad.titulo}"></div>`;
+                } else if (ad.mediaType === 'video' && ad.mediaData) {
+                    mediaHtml = `<div class="ad-media"><video controls><source src="${ad.mediaData}"></video></div>`;
+                } else if (ad.mediaType === 'audio' && ad.mediaData) {
+                    mediaHtml = `<div class="ad-media"><audio controls><source src="${ad.mediaData}"></audio></div>`;
+                }
+
+                const linkHtml = ad.enlace ? `<a href="${ad.enlace}" target="_blank" class="ad-link">Ver más →</a>` : '';
+
+                return `
+                    <div class="ad-card">
+                        ${mediaHtml}
+                        <div class="ad-content">
+                            <h3 class="ad-title">${ad.titulo}</h3>
+                            <p class="ad-description">${ad.descripcion}</p>
+                            ${linkHtml}
+                            ${currentUser?.role === 'admin' ? `
+                                <div class="ad-actions">
+                                    <button class="btn-warning" onclick="editAd(${ad.id})">Editar</button>
+                                    <button class="btn-danger" onclick="deleteAd(${ad.id})">Eliminar</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function loadAdsTable() {
+            const tbody = document.getElementById('adsTableBody');
+            if (!tbody) return;
+            
+            document.getElementById('totalAds').textContent = publicidad.length;
+            
+            tbody.innerHTML = publicidad.map(ad => `
+                <tr>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ecf0f1;">${ad.titulo}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ecf0f1;">${ad.mediaType === 'none' ? 'Solo texto' : ad.mediaType}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ecf0f1;">${ad.fecha || 'N/A'}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ecf0f1;">
+                        <button class="btn-warning" style="padding: 0.3rem 0.8rem; margin-right: 0.5rem;" onclick="editAd(${ad.id})">Editar</button>
+                        <button class="btn-danger" style="padding: 0.3rem 0.8rem;" onclick="deleteAd(${ad.id})">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ===== FUNCIONES PARA DOCUMENTOS =====
+        function openUploadModal(mainCategory, subCategory) {
+            editingDocId = null;
+            document.getElementById('documentModalTitle').textContent = 'Subir Documento';
+            document.getElementById('docTitle').value = '';
+            
+            const mainCategorySelect = document.getElementById('docMainCategory');
+            mainCategorySelect.innerHTML = Object.entries(TABS).map(([key, tab]) => 
+                `<option value="${key}">${tab.icon} ${tab.name}</option>`
+            ).join('');
+            
+            if (mainCategory) mainCategorySelect.value = mainCategory;
+            
+            loadSubCategories();
+            if (subCategory) {
+                setTimeout(() => {
+                    document.getElementById('docSubCategory').value = subCategory;
+                }, 100);
+            }
+            
+            document.getElementById('docFile').value = '';
+            document.getElementById('documentModal').style.display = 'block';
+        }
+
+        function loadSubCategories() {
+            const mainCategory = document.getElementById('docMainCategory').value;
+            const subCategorySelect = document.getElementById('docSubCategory');
+            
+            if (TABS[mainCategory]) {
+                subCategorySelect.innerHTML = Object.entries(TABS[mainCategory].subTabs).map(([key, st]) => 
+                    `<option value="${key}">${st.icon} ${st.name}</option>`
+                ).join('');
+            }
+        }
+
+        function editDocument(id) {
+            const doc = documentos.find(d => d.id === id);
+            if (doc) {
+                editingDocId = id;
+                document.getElementById('documentModalTitle').textContent = 'Editar Documento';
+                document.getElementById('docTitle').value = doc.titulo;
+                
+                const mainCategorySelect = document.getElementById('docMainCategory');
+                mainCategorySelect.innerHTML = Object.entries(TABS).map(([key, tab]) => 
+                    `<option value="${key}">${tab.icon} ${tab.name}</option>`
+                ).join('');
+                mainCategorySelect.value = doc.mainCategoria;
+                
+                loadSubCategories();
+                
+                setTimeout(() => {
+                    document.getElementById('docSubCategory').value = doc.subCategoria;
+                }, 100);
+                
+                document.getElementById('docFile').value = '';
+                document.getElementById('documentModal').style.display = 'block';
+            }
+        }
+
+        function deleteDocument(id) {
+            if (confirm('¿Eliminar este documento?')) {
+                documentos = documentos.filter(doc => doc.id !== id);
+                localStorage.setItem('documentos', JSON.stringify(documentos));
+                
+                if (currentMainTab === 'inicio') {
+                    loadLatestDocuments();
+                } else if (currentMainTab && TABS[currentMainTab]) {
+                    loadDocumentsBySection(currentMainTab, currentSubTab);
+                } else if (currentMainTab === 'admin-documentos') {
+                    loadDocumentsTable();
+                }
+                
+                updateStats();
+                showSyncStatus('Documento eliminado', 'warning');
+                syncAfterSave();
+            }
+        }
+
+        function saveDocument() {
+            const titulo = document.getElementById('docTitle').value;
+            const mainCategory = document.getElementById('docMainCategory').value;
+            const subCategory = document.getElementById('docSubCategory').value;
+            const file = document.getElementById('docFile').files[0];
+
+            if (!titulo) {
+                alert('Ingrese el título');
+                return;
+            }
+
+            if (editingDocId) {
+                const index = documentos.findIndex(d => d.id === editingDocId);
+                if (index !== -1) {
+                    documentos[index].titulo = titulo;
+                    documentos[index].mainCategoria = mainCategory;
+                    documentos[index].subCategoria = subCategory;
+                }
+                
+                localStorage.setItem('documentos', JSON.stringify(documentos));
+                closeModal('documentModal');
+                
+                if (currentMainTab === 'inicio') {
+                    loadLatestDocuments();
+                } else if (currentMainTab && TABS[currentMainTab]) {
+                    loadDocumentsBySection(currentMainTab, currentSubTab);
+                } else if (currentMainTab === 'admin-documentos') {
+                    loadDocumentsTable();
+                }
+                
+                showSyncStatus('Documento actualizado', 'success');
+                syncAfterSave();
+                
+            } else {
+                if (!file) {
+                    alert('Seleccione un archivo PDF');
+                    return;
+                }
+                if (file.type !== 'application/pdf') {
+                    alert('Seleccione un archivo PDF');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    documentos.push({
+                        id: Date.now(),
+                        titulo,
+                        mainCategoria: mainCategory,
+                        subCategoria: subCategory,
+                        archivo: e.target.result,
+                        fecha: new Date().toLocaleDateString()
+                    });
+                    
+                    localStorage.setItem('documentos', JSON.stringify(documentos));
+                    closeModal('documentModal');
+                    
+                    if (currentMainTab === 'inicio') {
+                        loadLatestDocuments();
+                    } else if (currentMainTab && TABS[currentMainTab]) {
+                        loadDocumentsBySection(currentMainTab, currentSubTab);
+                    } else if (currentMainTab === 'admin-documentos') {
+                        loadDocumentsTable();
+                    }
+                    
+                    updateStats();
+                    showSyncStatus('Documento guardado', 'success');
+                    syncAfterSave();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function loadDocumentsBySection(mainTab, subTab) {
+            const container = document.getElementById(`${mainTab}_${subTab || Object.keys(TABS[mainTab].subTabs)[0]}List`);
+            if (!container) return;
+
+            let sectionDocuments = documentos.filter(doc => 
+                doc.mainCategoria === mainTab && doc.subCategoria === subTab
+            );
+            
+            if (sectionDocuments.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">No hay documentos en esta sección</p>';
+                return;
+            }
+
+            container.innerHTML = sectionDocuments.map(doc => `
+                <div class="documento-card">
+                    <h3>${doc.titulo}</h3>
+                    <div class="fecha">Subido: ${doc.fecha}</div>
+                    <div class="acciones-documento">
+                        <button class="btn-doc btn-ver" onclick="verPDF('${doc.archivo}', '${doc.titulo}')">Ver</button>
+                        <button class="btn-doc btn-descargar" onclick="descargarPDF('${doc.archivo}', '${doc.titulo}')">Descargar</button>
+                        ${currentUser?.role === 'admin' ? `
+                            <button class="btn-doc btn-editar" onclick="editDocument(${doc.id})">Editar</button>
+                            <button class="btn-doc btn-eliminar" onclick="deleteDocument(${doc.id})">Eliminar</button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadDocumentsTable() {
+            const tbody = document.getElementById('documentosTableBody');
+            if (!tbody) return;
+            
+            document.getElementById('totalDocumentos').textContent = documentos.length;
+            
+            tbody.innerHTML = documentos.map(doc => {
+                const mainTab = TABS[doc.mainCategoria];
+                const subTab = mainTab?.subTabs[doc.subCategoria];
+                return `
+                <tr>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ecf0f1;">${doc.titulo}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ecf0f1;">${mainTab ? mainTab.name : doc.mainCategoria}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ecf0f1;">${subTab ? subTab.name : doc.subCategoria}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ecf0f1;">${doc.fecha}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ecf0f1;">
+                        <button class="btn-ver" style="padding: 0.3rem 0.8rem; margin-right: 0.3rem;" onclick="verPDF('${doc.archivo}', '${doc.titulo}')">Ver</button>
+                        <button class="btn-editar" style="padding: 0.3rem 0.8rem; margin-right: 0.3rem;" onclick="editDocument(${doc.id})">Editar</button>
+                        <button class="btn-eliminar" style="padding: 0.3rem 0.8rem;" onclick="deleteDocument(${doc.id})">Eliminar</button>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        function loadLatestDocuments() {
+            const container = document.getElementById('latestDocuments');
+            if (!container) return;
+            
+            let latest = [...documentos].reverse().slice(0, 6);
+            
+            if (latest.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">No hay documentos recientes</p>';
+                return;
+            }
+
+            container.innerHTML = latest.map(doc => {
+                const mainTab = TABS[doc.mainCategoria];
+                const subTab = mainTab?.subTabs[doc.subCategoria];
+                return `
+                <div class="documento-card">
+                    <h3>${doc.titulo}</h3>
+                    <span class="categoria">${mainTab ? mainTab.name : doc.mainCategoria}</span>
+                    <span class="subcategoria">${subTab ? subTab.name : doc.subCategoria}</span>
+                    <div class="fecha">${doc.fecha}</div>
+                    <div class="acciones-documento">
+                        <button class="btn-doc btn-ver" onclick="verPDF('${doc.archivo}', '${doc.titulo}')">Ver</button>
+                        <button class="btn-doc btn-descargar" onclick="descargarPDF('${doc.archivo}', '${doc.titulo}')">Descargar</button>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        function verPDF(dataUrl, titulo) {
+            document.getElementById('pdfViewerTitle').textContent = titulo;
+            document.getElementById('pdfViewerFrame').src = dataUrl;
+            document.getElementById('pdfViewerModal').style.display = 'block';
+        }
+
+        function descargarPDF(dataUrl, titulo) {
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = `${titulo}.pdf`;
+            link.click();
+        }
+
+        function updateStats() {
+            document.querySelectorAll('#totalDocumentos, #totalDocumentosStats').forEach(el => {
+                if (el) el.textContent = documentos.length;
+            });
+            
+            document.querySelectorAll('#totalPublicidad, #totalPublicidadStats').forEach(el => {
+                if (el) el.textContent = publicidad.length;
+            });
+            
+            const totalUsuarios = document.getElementById('totalUsuarios');
+            if (totalUsuarios) totalUsuarios.textContent = usuarios.length;
+        }
+
+        // ===== FUNCIONES PARA USUARIOS (ADMIN) =====
+        function openUserModal() {
+            editingUserId = null;
+            document.getElementById('userModalTitle').textContent = 'Nuevo Usuario';
+            document.getElementById('userCarnet').value = '';
+            document.getElementById('userCarnet').disabled = false;
+            document.getElementById('userPassword').value = '';
+            document.getElementById('userRole').value = 'usuario';
+            document.getElementById('userModal').style.display = 'block';
+        }
+
+        function editUser(carnet) {
+            const user = usuarios.find(u => u.carnet === carnet);
+            if (user) {
+                editingUserId = carnet;
+                document.getElementById('userModalTitle').textContent = 'Editar Usuario';
+                document.getElementById('userCarnet').value = user.carnet;
+                document.getElementById('userCarnet').disabled = true;
+                document.getElementById('userPassword').value = user.password;
+                document.getElementById('userRole').value = user.role;
+                document.getElementById('userModal').style.display = 'block';
+            }
+        }
+
+        function deleteUser(carnet) {
+            if (carnet === 'admin') {
+                alert('No se puede eliminar el usuario administrador');
+                return;
+            }
+            
+            if (confirm('¿Eliminar este usuario?')) {
+                usuarios = usuarios.filter(u => u.carnet !== carnet);
+                localStorage.setItem('usuarios', JSON.stringify(usuarios));
+                loadUsersTable();
+                syncAfterSave();
+            }
+        }
+
+        function saveUser() {
+            const carnet = document.getElementById('userCarnet').value;
+            const password = document.getElementById('userPassword').value;
+            const role = document.getElementById('userRole').value;
+
+            if (!carnet || !password) {
+                alert('Complete todos los campos');
+                return;
+            }
+
+            if (editingUserId) {
+                const index = usuarios.findIndex(u => u.carnet === editingUserId);
+                if (index !== -1) {
+                    usuarios[index] = { ...usuarios[index], password, role };
+                }
+            } else {
+                if (usuarios.some(u => u.carnet === carnet)) {
+                    alert('El carnet ya existe');
+                    return;
+                }
+                usuarios.push({ carnet, password, role });
+            }
+
+            localStorage.setItem('usuarios', JSON.stringify(usuarios));
+            closeModal('userModal');
+            loadUsersTable();
+            syncAfterSave();
+        }
+
+        function loadUsersTable() {
+            const tbody = document.getElementById('usuariosTableBody');
+            if (!tbody) return;
+            
+            document.getElementById('totalUsuarios').textContent = usuarios.length;
+            
+            tbody.innerHTML = usuarios.map(user => `
+                <tr>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ecf0f1;">${user.carnet}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ecf0f1;">${user.role === 'admin' ? 'Administrador' : 'Usuario'}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ecf0f1;">
+                        <button class="btn-warning" style="padding: 0.3rem 0.8rem; margin-right: 0.5rem;" onclick="editUser('${user.carnet}')">Editar</button>
+                        ${user.carnet !== 'admin' ? `<button class="btn-danger" style="padding: 0.3rem 0.8rem;" onclick="deleteUser('${user.carnet}')">Eliminar</button>` : ''}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ===== UTILIDADES =====
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            if (modalId === 'pdfViewerModal') {
+                document.getElementById('pdfViewerFrame').src = '';
+            }
+        }
+
+        window.onload = init;
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                closeModal(event.target.id);
+            }
+            
+            if (window.innerWidth <= 768) {
+                const sidebar = document.getElementById('appSidebar');
+                const menuBtn = document.getElementById('headerMenuBtn');
+                
+                if (sidebar.classList.contains('show-mobile') && 
+                    !sidebar.contains(event.target) && 
+                    !menuBtn.contains(event.target)) {
+                    sidebar.classList.remove('show-mobile');
+                }
+            }
+        };
+
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                document.getElementById('appSidebar').classList.remove('show-mobile');
+            }
+        });
+    </script>
+</body>
+</html>
