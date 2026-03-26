@@ -1,0 +1,2835 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>Cifram-LAB · Gestor de Archivos</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: #f4f7fb;
+            min-height: 100vh;
+            padding: 12px;
+        }
+        
+        .app-container {
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.75);
+            backdrop-filter: blur(4px);
+            border-radius: 28px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.5);
+            display: flex;
+            gap: 20px;
+            position: relative;
+            min-height: 600px;
+        }
+        
+        .sidebar {
+            width: 280px;
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            padding: 20px 12px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.8);
+            transition: all 0.3s ease;
+            position: sticky;
+            top: 20px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            height: fit-content;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            align-self: flex-start;
+        }
+        
+        .sidebar.collapsed {
+            width: 80px;
+        }
+        
+        .sidebar.collapsed .tab-btn span,
+        .sidebar.collapsed .user-info span,
+        .sidebar.collapsed .logout-btn span,
+        .sidebar.collapsed .toggle-sidebar span,
+        .sidebar.collapsed .global-search-container span,
+        .sidebar.collapsed .global-search-container input {
+            display: none;
+        }
+        
+        .sidebar.collapsed .tab-btn i,
+        .sidebar.collapsed .toggle-sidebar i,
+        .sidebar.collapsed .global-search-container i {
+            font-size: 1.3rem;
+            margin: 0;
+        }
+        
+        .toggle-sidebar {
+            position: sticky;
+            top: 0;
+            z-index: 101;
+            width: 100%;
+            margin-bottom: 15px;
+            background: #2dba4e;
+            color: white;
+            border: 2px solid white;
+            border-radius: 50px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 10004;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .connection-status.online {
+            background: #2dba4e;
+            color: white;
+        }
+        
+        .connection-status.offline {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .connection-status.syncing {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .pending-badge {
+            background: #f59e0b;
+            color: white;
+            border-radius: 20px;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            margin-left: 8px;
+        }
+        
+        .global-search-container {
+            position: relative;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        
+        .global-search-input {
+            width: 100%;
+            padding: 12px 20px 12px 45px;
+            border-radius: 50px;
+            border: 2px solid #e2e8f0;
+            font-size: 0.95rem;
+            background: white;
+        }
+        
+        .global-search-results {
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: #334155;
+            background: white;
+            border-radius: 20px;
+            padding: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .global-search-result-item {
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .global-search-result-item:hover {
+            background: #f0fdf4;
+            transform: translateX(5px);
+        }
+        
+        .search-result-title {
+            font-weight: 600;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .search-result-location {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 4px;
+            padding-left: 24px;
+        }
+        
+        .tabs-vertical {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 10px 0;
+            flex: 1;
+        }
+        
+        .tab-btn {
+            padding: 12px 15px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border: none;
+            background: rgba(230, 240, 255, 0.7);
+            color: #1a2639;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            text-align: left;
+        }
+        
+        .tab-btn i {
+            width: 24px;
+            text-align: center;
+        }
+        
+        .tab-btn.activa {
+            background: #ffffffcc;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.15);
+            font-weight: 700;
+        }
+        
+        .tab-btn.config-tab {
+            background: linear-gradient(145deg, #2dba4e, #1e7e34);
+            color: white;
+        }
+        
+        .tab-btn.admin-tab {
+            background: linear-gradient(145deg, #8b5cf6, #6d28d9);
+            color: white;
+        }
+        
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+            padding: 8px;
+            background: #f1f5f9;
+            border-radius: 50px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: white;
+            padding: 5px 12px;
+            border-radius: 40px;
+            flex: 1;
+            font-size: 0.9rem;
+        }
+        
+        .logout-btn {
+            background: transparent;
+            border: 2px solid #ef4444;
+            color: #ef4444;
+            padding: 8px 12px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+            margin-top: auto;
+        }
+        
+        .main-content {
+            flex: 1;
+            min-width: 0;
+            overflow-x: hidden;
+        }
+        
+        .search-container {
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 14px 20px 14px 50px;
+            border-radius: 50px;
+            border: 2px solid #e2e8f0;
+            font-size: 1rem;
+            background: white;
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+        
+        .clear-search {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            display: none;
+        }
+        
+        .search-stats {
+            margin-top: 6px;
+            font-size: 0.85rem;
+            color: #64748b;
+            padding-left: 10px;
+        }
+        
+        .current-tab-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #2dba4e;
+            display: inline-block;
+        }
+        
+        .sub-tabs-horizontal {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 15px 0 20px 0;
+            padding: 5px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 50px;
+        }
+        
+        .sub-tab-horizontal-btn {
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: none;
+            background: rgba(255,255,255,0.7);
+            color: #334155;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .sub-tab-horizontal-btn.activa {
+            background: #2dba4e;
+            color: white;
+        }
+        
+        .config-panel {
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 36px;
+            padding: 20px;
+            border: 2px solid #2dba4e;
+        }
+        
+        .config-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .config-card {
+            background: white;
+            border-radius: 28px;
+            padding: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        }
+        
+        .config-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #334155;
+        }
+        
+        .input-group input, .input-group textarea, .input-group select {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 30px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+        }
+        
+        .token-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            background: #f1f5f9;
+            padding: 4px 4px 4px 16px;
+            border-radius: 50px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .token-row input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 10px 0;
+            font-family: monospace;
+        }
+        
+        .token-row button {
+            background: #0d1117;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+        }
+        
+        .primary-btn {
+            background: #2dba4e;
+            border: none;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 40px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 8px;
+        }
+        
+        .primary-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .files-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .targeta-card {
+            background: rgba(255,255,255,0.6);
+            backdrop-filter: blur(8px);
+            border-radius: 24px;
+            box-shadow: 0 12px 20px -10px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.8);
+            transition: transform 0.2s;
+            padding: 0 0 12px 0;
+            scroll-margin-top: 100px;
+        }
+        
+        .targeta-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .targeta-card.highlight-card {
+            animation: highlightPulse 1s ease-in-out;
+            border: 2px solid #2dba4e;
+            box-shadow: 0 0 0 3px rgba(45, 186, 78, 0.3);
+        }
+        
+        .targeta-card.pending {
+            opacity: 0.7;
+            border: 2px dashed #f59e0b;
+        }
+        
+        @keyframes highlightPulse {
+            0% { transform: scale(1); background: rgba(45, 186, 78, 0); }
+            50% { transform: scale(1.02); background: rgba(45, 186, 78, 0.3); }
+            100% { transform: scale(1); background: rgba(45, 186, 78, 0); }
+        }
+        
+        .targeta-img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 24px 24px 0 0;
+            cursor: pointer;
+        }
+        
+        .targeta-titulo {
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin: 12px 12px 6px;
+        }
+        
+        .targeta-parrafo {
+            color: #334155;
+            font-size: 0.95rem;
+            margin: 0 12px 12px;
+            line-height: 1.4;
+        }
+        
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            margin: 8px 12px 0;
+            flex-wrap: wrap;
+        }
+        
+        .card-action-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        
+        .view-btn { background: #3b82f6; color: white; }
+        .edit-btn { background: #f59e0b; color: white; }
+        .delete-btn { background: #ef4444; color: white; }
+        .doc-btn { background: #8b5cf6; color: white; }
+        
+        .file-card {
+            background: rgba(255,255,255,0.6);
+            backdrop-filter: blur(8px);
+            border-radius: 24px;
+            padding: 16px;
+            box-shadow: 0 12px 20px -10px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            scroll-margin-top: 100px;
+        }
+        
+        .file-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .file-card.highlight-card {
+            animation: highlightPulse 1s ease-in-out;
+            border: 2px solid #2dba4e;
+            box-shadow: 0 0 0 3px rgba(45, 186, 78, 0.3);
+        }
+        
+        .empty-folder {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+            background: rgba(255,255,255,0.3);
+            border-radius: 40px;
+        }
+        
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 60px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+        
+        .login-card h1 {
+            font-size: 2.5rem;
+            color: #2dba4e;
+            margin-bottom: 10px;
+        }
+        
+        .login-card h2 {
+            margin-bottom: 30px;
+            color: #0f172a;
+            font-size: 1.5rem;
+        }
+        
+        .login-input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .login-input {
+            width: 100%;
+            padding: 16px 50px 16px 20px;
+            border-radius: 50px;
+            border: 2px solid #e2e8f0;
+            font-size: 1rem;
+            transition: 0.2s;
+        }
+        
+        .login-input:focus {
+            outline: none;
+            border-color: #2dba4e;
+            box-shadow: 0 0 0 3px rgba(45, 186, 78, 0.2);
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 8px;
+            transition: color 0.2s;
+        }
+        
+        .password-toggle:hover {
+            color: #2dba4e;
+        }
+        
+        .login-btn {
+            background: #2dba4e;
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            width: 100%;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 10px;
+        }
+        
+        .login-btn:hover {
+            background: #24963e;
+            transform: translateY(-2px);
+        }
+        
+        .login-error {
+            color: #dc2626;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+        
+        .login-hint {
+            margin-top: 15px;
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+        
+        .image-modal, .edit-modal, .doc-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 10001;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .edit-modal-content, .doc-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 50px;
+            max-width: 700px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        
+        .doc-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+            background: #f1f5f9;
+            padding: 8px;
+            border-radius: 50px;
+        }
+        
+        .doc-tab-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px 15px;
+            border-radius: 40px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .doc-tab-btn:hover {
+            background: rgba(45, 186, 78, 0.1);
+        }
+        
+        .doc-tab-btn.activa {
+            background: #2dba4e;
+            color: white;
+        }
+        
+        .doc-tab-content {
+            display: none;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 30px;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .doc-tab-content.activa {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .doc-files-list {
+            margin: 15px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            background: white;
+            border-radius: 20px;
+            padding: 10px;
+        }
+        
+        .doc-file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            transition: background 0.2s;
+        }
+        
+        .doc-file-item:hover {
+            background: #f8fafc;
+        }
+        
+        .doc-file-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+        
+        .doc-file-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .doc-file-btn {
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: none;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .doc-file-btn.view-btn { background: #3b82f6; color: white; }
+        .doc-file-btn.view-btn:hover { background: #2563eb; }
+        .doc-file-btn.download-btn { background: #0d1117; color: white; text-decoration: none; }
+        .doc-file-btn.download-btn:hover { background: #1e293b; }
+        .doc-file-btn.delete-btn { background: #ef4444; color: white; }
+        .doc-file-btn.delete-btn:hover { background: #dc2626; }
+        
+        .upload-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f1f5f9;
+            border-radius: 30px;
+            transition: all 0.2s;
+        }
+        
+        .upload-section:hover {
+            background: #e6f0ea;
+        }
+        
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 40px;
+            z-index: 10003;
+            font-weight: 600;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .image-preview {
+            width: 100%;
+            min-height: 120px;
+            border: 2px dashed #94a3b8;
+            border-radius: 24px;
+            margin: 12px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+            overflow: hidden;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 25px;
+            color: #475569;
+            font-size: 0.85rem;
+        }
+        
+        .auto-update-badge {
+            display: inline-block;
+            background: #2dba4e20;
+            color: #1e7e34;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+            border: 1px solid #2dba4e;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar { width: 220px; }
+            .sidebar.collapsed { width: 70px; }
+            .files-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+            .doc-tab-btn { min-width: 100px; padding: 8px 12px; font-size: 0.8rem; }
+            .connection-status { font-size: 0.7rem; padding: 4px 12px; top: 5px; right: 5px; }
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #2dba4e;
+        }
+        
+        .smooth-update {
+            transition: all 0.3s ease;
+        }
+        
+        .fade-update {
+            animation: fadeUpdate 0.3s ease;
+        }
+        
+        @keyframes fadeUpdate {
+            from {
+                opacity: 0.5;
+                transform: translateY(5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="loginOverlay" class="login-overlay">
+    <div class="login-card">
+        <h1>Cifram-LAB</h1>
+        <h2>Iniciar Sesión</h2>
+        
+        <div class="login-input-group">
+            <input type="text" id="loginUsername" class="login-input" placeholder="Usuario">
+        </div>
+        
+        <div class="login-input-group">
+            <input type="password" id="loginPassword" class="login-input" placeholder="Contraseña">
+            <button class="password-toggle" id="toggleLoginPassword">
+                <i class="far fa-eye"></i>
+            </button>
+        </div>
+        
+        <button class="login-btn" id="loginBtn">
+            <i class="fas fa-sign-in-alt"></i> Ingresar
+        </button>
+        
+        <div id="loginError" class="login-error"></div>
+        <div class="login-hint">
+            <i class="fas fa-keyboard"></i> Presiona Enter para ingresar
+        </div>
+    </div>
+</div>
+
+<div id="connectionStatus" class="connection-status online">
+    <i class="fas fa-wifi"></i>
+    <span>Conectado</span>
+</div>
+
+<div class="app-container" id="appContainer" style="display: none;">
+    <div class="sidebar" id="sidebar">
+        <div class="toggle-sidebar" id="toggleSidebar">
+            <i class="fas fa-chevron-left"></i>
+            <span>Ocultar menú</span>
+        </div>
+        <div class="global-search-container">
+            <i class="fas fa-search global-search-icon"></i>
+            <input type="text" class="global-search-input" id="globalSearchInput" placeholder="Buscar en todos...">
+            <div id="globalSearchResults" class="global-search-results"></div>
+        </div>
+        <div id="sidebarUserSection"></div>
+        <div class="tabs-vertical" id="tabContainer"></div>
+        <div id="logoutContainer"></div>
+    </div>
+
+    <div class="main-content">
+        <div id="currentTabTitle" class="current-tab-title">Nuestro Equipo</div>
+        <div class="search-container">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input" id="searchInput" placeholder="Buscar por nombre...">
+            <button class="clear-search" id="clearSearch"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="searchStats" class="search-stats"></div>
+        <div id="subTabsContainer" class="sub-tabs-horizontal" style="display: none;"></div>
+        <div id="dynamicContent"></div>
+        <footer>📁 Cifram-LAB · Gestor de Archivos <span class="auto-update-badge"><i class="fas fa-sync-alt"></i> Actualización automática</span></footer>
+    </div>
+</div>
+
+<div id="imageModal" class="image-modal" onclick="this.style.display='none'">
+    <img id="modalImage" style="max-width:90%; max-height:90%;">
+</div>
+
+<div id="editCardModal" class="edit-modal">
+    <div class="edit-modal-content">
+        <h3><i class="fas fa-edit"></i> Editar Tarjeta</h3>
+        <div class="input-group">
+            <label>Título</label>
+            <input type="text" id="editCardTitle" placeholder="Título de la tarjeta">
+        </div>
+        <div class="input-group">
+            <label>Párrafo / Descripción</label>
+            <textarea id="editCardParagraph" rows="4" placeholder="Descripción de la tarjeta"></textarea>
+        </div>
+        <div class="input-group">
+            <label>Cambiar imagen (opcional)</label>
+            <input type="file" id="editCardImage" accept="image/*">
+            <div class="image-preview" id="editImagePreview"></div>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="primary-btn" id="saveEditBtn" style="flex:1; background:#2dba4e;">
+                <i class="fas fa-save"></i> Guardar Cambios
+            </button>
+            <button class="primary-btn" id="cancelEditBtn" style="flex:1; background:#64748b;">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="docModal" class="doc-modal">
+    <div class="doc-modal-content" id="docModalContent"></div>
+</div>
+
+<script>
+(function() {
+    const GITHUB_OWNER = 'cyframlab-cyber';
+    const GITHUB_REPO = 'Archivos-2';
+    const GITHUB_BRANCH = 'main';
+
+    const CATEGORIAS = [
+        { id: 'targeta', nombre: 'Nuestro Equipo', icono: 'fa-id-card', tieneSub: false },
+        { id: 'documento1', nombre: 'Documento de Gestión', icono: 'fa-file-alt', tieneSub: true, subs: ['Apoyo', 'Estrategico', 'Claves', 'Laboratorios', 'Otros'] },
+        { id: 'documento2', nombre: 'Manuales', icono: 'fa-file-alt', tieneSub: true, subs: ['Apoyo', 'Estrategico', 'Claves', 'Laboratorios', 'Otros'] },
+        { id: 'documento3', nombre: 'Lista de Guías', icono: 'fa-file-alt', tieneSub: true, subs: ['Apoyo', 'Estrategico', 'Claves', 'Laboratorios', 'Otros'] },
+        { id: 'documento4', nombre: 'Procedimiento', icono: 'fa-file-alt', tieneSub: true, subs: ['Apoyo', 'Estrategico', 'Claves', 'Laboratorios', 'Otros'] },
+        { id: 'documento5', nombre: 'Instructivos', icono: 'fa-file-alt', tieneSub: true, subs: ['Apoyo', 'Estrategico', 'Claves', 'Laboratorios', 'Otros'] },
+        { id: 'documento6', nombre: 'Formatos', icono: 'fa-file-alt', tieneSub: true, subs: ['Apoyo', 'Estrategico', 'Claves', 'Laboratorios', 'Otros'] }
+    ];
+
+    const CONFIG_TAB = { id: 'config', nombre: 'Subir Archivo', icono: 'fa-upload' };
+    const ADMIN_TAB = { id: 'admin', nombre: 'Administrar Usuarios', icono: 'fa-users-cog' };
+    
+    const DOC_TABS = [
+        { id: 'cv', nombre: 'Currículum vitae (CV)', icono: 'fa-file-alt' },
+        { id: 'conea', nombre: 'Licencia de CONEA', icono: 'fa-certificate' },
+        { id: 'confidencialidad', nombre: 'Carta confidencialidad', icono: 'fa-file-signature' },
+        { id: 'autorizacion', nombre: 'Autorización de funciones', icono: 'fa-file-contract' },
+        { id: 'otros', nombre: 'Otros', icono: 'fa-folder-open' }
+    ];
+
+    let currentTab = 'targeta';
+    let currentSub = null;
+    let archivosPorCategoria = {};
+    let archivosPorTarjeta = {};
+    let githubToken = localStorage.getItem('github_token') || '';
+    let isAuthenticated = false;
+    let currentUser = null;
+    let sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    let localSearchTerm = '';
+    let globalSearchTerm = '';
+    let usuarios = [];
+    let tarjetasData = [];
+    let archivosData = [];
+    let currentEditingCard = null;
+    let autoUpdateInterval = null;
+    let isUpdating = false;
+    
+    // Cola de operaciones pendientes
+    let pendingOperations = JSON.parse(localStorage.getItem('pendingOperations') || '[]');
+    let isOnline = navigator.onLine;
+    let isSyncing = false;
+
+    const appContainer = document.getElementById('appContainer');
+    const loginOverlay = document.getElementById('loginOverlay');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginUsername = document.getElementById('loginUsername');
+    const loginPassword = document.getElementById('loginPassword');
+    const loginError = document.getElementById('loginError');
+    const togglePasswordBtn = document.getElementById('toggleLoginPassword');
+    const connectionStatusDiv = document.getElementById('connectionStatus');
+    const sidebar = document.getElementById('sidebar');
+    const toggleSidebar = document.getElementById('toggleSidebar');
+    const searchInput = document.getElementById('searchInput');
+    const clearSearch = document.getElementById('clearSearch');
+    const searchStats = document.getElementById('searchStats');
+    const globalSearchInput = document.getElementById('globalSearchInput');
+    const globalSearchResults = document.getElementById('globalSearchResults');
+    const dynamicContent = document.getElementById('dynamicContent');
+
+    // Actualizar estado de conexión
+    function updateConnectionStatus() {
+        isOnline = navigator.onLine;
+        const pendingCount = pendingOperations.length;
+        
+        if (!isOnline) {
+            connectionStatusDiv.className = 'connection-status offline';
+            connectionStatusDiv.innerHTML = `<i class="fas fa-wifi"></i><span>Sin conexión</span>${pendingCount > 0 ? `<span class="pending-badge">${pendingCount} pendiente${pendingCount !== 1 ? 's' : ''}</span>` : ''}`;
+        } else if (isSyncing) {
+            connectionStatusDiv.className = 'connection-status syncing';
+            connectionStatusDiv.innerHTML = `<i class="fas fa-sync-alt fa-spin"></i><span>Sincronizando...</span>`;
+        } else {
+            connectionStatusDiv.className = 'connection-status online';
+            connectionStatusDiv.innerHTML = `<i class="fas fa-wifi"></i><span>Conectado</span>${pendingCount > 0 ? `<span class="pending-badge">${pendingCount} pendiente${pendingCount !== 1 ? 's' : ''}</span>` : ''}`;
+        }
+    }
+
+    // Guardar operaciones pendientes
+    function savePendingOperations() {
+        localStorage.setItem('pendingOperations', JSON.stringify(pendingOperations));
+        updateConnectionStatus();
+    }
+
+    // Agregar operación a la cola
+    function addToPendingQueue(operation) {
+        operation.id = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        operation.timestamp = new Date().toISOString();
+        pendingOperations.push(operation);
+        savePendingOperations();
+        showNotification(`📝 Operación guardada para cuando haya conexión: ${operation.description}`, 'info');
+    }
+
+    // Ejecutar una operación
+    async function executeOperation(operation) {
+        try {
+            let success = false;
+            
+            switch (operation.type) {
+                case 'updateCard':
+                    success = await executeUpdateCard(operation.data);
+                    break;
+                case 'deleteCard':
+                    success = await executeDeleteCard(operation.data);
+                    break;
+                case 'uploadFile':
+                    success = await executeUploadFile(operation.data);
+                    break;
+                case 'deleteFile':
+                    success = await executeDeleteFile(operation.data);
+                    break;
+                case 'createCard':
+                    success = await executeCreateCard(operation.data);
+                    break;
+            }
+            
+            if (success) {
+                showNotification(`✅ ${operation.description} completado`, 'success');
+                return true;
+            } else {
+                throw new Error('Operación falló');
+            }
+        } catch (error) {
+            console.error('Error ejecutando operación:', error);
+            return false;
+        }
+    }
+
+    // Ejecutar actualización de tarjeta
+    async function executeUpdateCard(data) {
+        const { imgPath, metaPath, titulo, parrafo, nuevaImagenBase64, nuevaImagenNombre } = data;
+        
+        // Subir nueva imagen si existe
+        if (nuevaImagenBase64 && nuevaImagenNombre) {
+            const nuevoPath = `targeta/${nuevaImagenNombre}`;
+            let sha = null;
+            try {
+                const res = await requestGitHub(`/contents/${nuevoPath}?ref=${GITHUB_BRANCH}`);
+                if (res.ok) sha = (await res.json()).sha;
+            } catch { }
+            await requestGitHub(`/contents/${nuevoPath}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    message: `Subir nueva imagen: ${nuevaImagenNombre}`,
+                    content: nuevaImagenBase64,
+                    branch: GITHUB_BRANCH,
+                    ...(sha && { sha })
+                })
+            });
+            
+            // Eliminar imagen anterior
+            await eliminarArchivoDeGitHub(imgPath);
+        }
+        
+        // Actualizar metadata
+        const metaContent = `TITULO: ${titulo}\nPARRAFO: ${parrafo}\nIMAGEN: ${data.nombreImagenFinal}`;
+        const metaBase64 = btoa(unescape(encodeURIComponent(metaContent)));
+        let metaSha = null;
+        try {
+            const res = await requestGitHub(`/contents/${metaPath}?ref=${GITHUB_BRANCH}`);
+            if (res.ok) metaSha = (await res.json()).sha;
+        } catch { }
+        await requestGitHub(`/contents/${metaPath}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                message: 'Actualizar metadata',
+                content: metaBase64,
+                branch: GITHUB_BRANCH,
+                ...(metaSha && { sha: metaSha })
+            })
+        });
+        
+        return true;
+    }
+
+    // Ejecutar eliminación de tarjeta
+    async function executeDeleteCard(data) {
+        const { imgPath, metaPath } = data;
+        if (metaPath) await eliminarArchivoDeGitHub(metaPath);
+        await eliminarArchivoDeGitHub(imgPath);
+        return true;
+    }
+
+    // Ejecutar subida de archivo
+    async function executeUploadFile(data) {
+        const { fileBase64, fileName, folderPath } = data;
+        const path = `${folderPath}/${fileName}`;
+        let sha = null;
+        try {
+            const res = await requestGitHub(`/contents/${path}?ref=${GITHUB_BRANCH}`);
+            if (res.ok) sha = (await res.json()).sha;
+        } catch { }
+        await requestGitHub(`/contents/${path}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                message: `Subir archivo: ${fileName}`,
+                content: fileBase64,
+                branch: GITHUB_BRANCH,
+                ...(sha && { sha })
+            })
+        });
+        return true;
+    }
+
+    // Ejecutar eliminación de archivo
+    async function executeDeleteFile(data) {
+        const { path } = data;
+        return await eliminarArchivoDeGitHub(path);
+    }
+
+    // Ejecutar creación de tarjeta
+    async function executeCreateCard(data) {
+        const { imgBase64, imgNombre, metaBase64, metaNombre } = data;
+        
+        // Subir imagen
+        const imgPath = `targeta/${imgNombre}`;
+        let imgSha = null;
+        try {
+            const res = await requestGitHub(`/contents/${imgPath}?ref=${GITHUB_BRANCH}`);
+            if (res.ok) imgSha = (await res.json()).sha;
+        } catch { }
+        await requestGitHub(`/contents/${imgPath}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                message: `Subir imagen: ${imgNombre}`,
+                content: imgBase64,
+                branch: GITHUB_BRANCH,
+                ...(imgSha && { sha: imgSha })
+            })
+        });
+        
+        // Subir metadata
+        const metaPath = `targeta/${metaNombre}`;
+        let metaSha = null;
+        try {
+            const res = await requestGitHub(`/contents/${metaPath}?ref=${GITHUB_BRANCH}`);
+            if (res.ok) metaSha = (await res.json()).sha;
+        } catch { }
+        await requestGitHub(`/contents/${metaPath}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                message: `Subir metadata: ${metaNombre}`,
+                content: metaBase64,
+                branch: GITHUB_BRANCH,
+                ...(metaSha && { sha: metaSha })
+            })
+        });
+        
+        return true;
+    }
+
+    // Sincronizar operaciones pendientes
+    async function syncPendingOperations() {
+        if (!isOnline || isSyncing || pendingOperations.length === 0) return;
+        
+        isSyncing = true;
+        updateConnectionStatus();
+        showNotification(`🔄 Sincronizando ${pendingOperations.length} operación(es) pendiente(s)...`, 'info');
+        
+        const operationsToProcess = [...pendingOperations];
+        let successCount = 0;
+        
+        for (const operation of operationsToProcess) {
+            const success = await executeOperation(operation);
+            if (success) {
+                const index = pendingOperations.findIndex(op => op.id === operation.id);
+                if (index !== -1) pendingOperations.splice(index, 1);
+                successCount++;
+                savePendingOperations();
+            } else {
+                // Si falla, detener la sincronización y reintentar después
+                break;
+            }
+        }
+        
+        isSyncing = false;
+        updateConnectionStatus();
+        
+        if (successCount > 0) {
+            showNotification(`✅ ${successCount} operación(es) sincronizada(s) correctamente`, 'success');
+            await loadAllCategories();
+        }
+        
+        if (pendingOperations.length > 0 && isOnline) {
+            // Reintentar después de 5 segundos si aún hay operaciones pendientes
+            setTimeout(() => syncPendingOperations(), 5000);
+        }
+    }
+
+    // Monitorear cambios de conexión
+    window.addEventListener('online', () => {
+        isOnline = true;
+        updateConnectionStatus();
+        showNotification('🌐 Conexión restablecida. Sincronizando cambios...', 'info');
+        syncPendingOperations();
+    });
+    
+    window.addEventListener('offline', () => {
+        isOnline = false;
+        updateConnectionStatus();
+        showNotification('⚠️ Sin conexión a internet. Los cambios se guardarán localmente.', 'error');
+    });
+
+    if (togglePasswordBtn) {
+        togglePasswordBtn.addEventListener('click', () => {
+            const type = loginPassword.type === 'password' ? 'text' : 'password';
+            loginPassword.type = type;
+            togglePasswordBtn.innerHTML = type === 'password' ? '<i class="far fa-eye"></i>' : '<i class="far fa-eye-slash"></i>';
+        });
+    }
+
+    loginPassword.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') loginBtn.click();
+    });
+    
+    loginUsername.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') loginBtn.click();
+    });
+
+    if (sidebarCollapsed) {
+        sidebar.classList.add('collapsed');
+        toggleSidebar.innerHTML = '<i class="fas fa-chevron-right"></i><span>Mostrar menú</span>';
+    }
+
+    toggleSidebar.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        sidebarCollapsed = sidebar.classList.contains('collapsed');
+        localStorage.setItem('sidebarCollapsed', sidebarCollapsed);
+        const icon = sidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left';
+        const text = sidebarCollapsed ? 'Mostrar menú' : 'Ocultar menú';
+        toggleSidebar.innerHTML = `<i class="fas ${icon}"></i><span>${text}</span>`;
+    });
+
+    function showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.className = 'notification';
+        notification.style.backgroundColor = type === 'success' ? '#2dba4e' : type === 'info' ? '#3b82f6' : '#ef4444';
+        notification.style.color = 'white';
+        notification.innerHTML = message;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 4000);
+    }
+
+    async function requestGitHub(endpoint, options = {}) {
+        if (!isOnline) {
+            throw new Error('No hay conexión a internet');
+        }
+        
+        const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}${endpoint}`;
+        const headers = {
+            'Accept': 'application/vnd.github.v3+json',
+            ...(githubToken ? { 'Authorization': `token ${githubToken}` } : {})
+        };
+        const res = await fetch(url, { ...options, headers });
+        if (!res.ok && res.status !== 404) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(`GitHub error ${res.status}: ${err.message || res.statusText}`);
+        }
+        return res;
+    }
+
+    async function fetchFilesInFolder(folderPath) {
+        try {
+            const res = await requestGitHub(`/contents/${folderPath}?ref=${GITHUB_BRANCH}`);
+            if (res.status === 404) return [];
+            const data = await res.json();
+            if (!Array.isArray(data)) return [];
+            return data.filter(item => item.type === 'file').map(f => ({
+                name: f.name,
+                download_url: f.download_url,
+                sha: f.sha,
+                path: f.path
+            }));
+        } catch { return []; }
+    }
+
+    async function subirArchivoAGitHub(file, folderPath) {
+        if (!isOnline) {
+            // Guardar en cola pendiente
+            const reader = new FileReader();
+            const base64 = await new Promise((resolve) => {
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.readAsDataURL(file);
+            });
+            
+            addToPendingQueue({
+                type: 'uploadFile',
+                description: `Subir archivo: ${file.name}`,
+                data: {
+                    fileBase64: base64,
+                    fileName: file.name,
+                    folderPath: folderPath
+                }
+            });
+            return false;
+        }
+        
+        if (!githubToken) {
+            showNotification('❌ Se requiere token de GitHub', 'error');
+            return false;
+        }
+        
+        try {
+            const reader = new FileReader();
+            const contentBase64 = await new Promise((resolve) => {
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.readAsDataURL(file);
+            });
+            
+            const path = `${folderPath}/${file.name}`;
+            let sha = null;
+            try {
+                const res = await requestGitHub(`/contents/${path}?ref=${GITHUB_BRANCH}`);
+                if (res.ok) sha = (await res.json()).sha;
+            } catch { }
+            
+            await requestGitHub(`/contents/${path}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    message: `Subir archivo: ${file.name}`,
+                    content: contentBase64,
+                    branch: GITHUB_BRANCH,
+                    ...(sha && { sha })
+                })
+            });
+            return true;
+        } catch (error) {
+            console.error('Error:', error);
+            // Si hay error de conexión, guardar en cola
+            if (!isOnline || error.message.includes('Failed to fetch')) {
+                const reader = new FileReader();
+                const base64 = await new Promise((resolve) => {
+                    reader.onload = () => resolve(reader.result.split(',')[1]);
+                    reader.readAsDataURL(file);
+                });
+                addToPendingQueue({
+                    type: 'uploadFile',
+                    description: `Subir archivo: ${file.name}`,
+                    data: {
+                        fileBase64: base64,
+                        fileName: file.name,
+                        folderPath: folderPath
+                    }
+                });
+                return false;
+            }
+            return false;
+        }
+    }
+
+    async function eliminarArchivoDeGitHub(path) {
+        if (!isOnline) {
+            addToPendingQueue({
+                type: 'deleteFile',
+                description: `Eliminar archivo: ${path.split('/').pop()}`,
+                data: { path: path }
+            });
+            return false;
+        }
+        
+        if (!githubToken) return false;
+        try {
+            const res = await requestGitHub(`/contents/${path}?ref=${GITHUB_BRANCH}`);
+            const data = await res.json();
+            await requestGitHub(`/contents/${path}`, {
+                method: 'DELETE',
+                body: JSON.stringify({
+                    message: 'Eliminar archivo',
+                    sha: data.sha,
+                    branch: GITHUB_BRANCH
+                })
+            });
+            return true;
+        } catch (error) {
+            console.error('Error:', error);
+            if (!isOnline || error.message.includes('Failed to fetch')) {
+                addToPendingQueue({
+                    type: 'deleteFile',
+                    description: `Eliminar archivo: ${path.split('/').pop()}`,
+                    data: { path: path }
+                });
+            }
+            return false;
+        }
+    }
+
+    async function loadAllCategories(silent = false) {
+        if (!silent) {
+            dynamicContent.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando archivos...</div>';
+        }
+        
+        const promises = [];
+        CATEGORIAS.forEach(cat => {
+            if (cat.tieneSub) {
+                cat.subs.forEach(sub => promises.push(fetchFilesInFolder(`${cat.id}/${sub}`)));
+            } else {
+                promises.push(fetchFilesInFolder(cat.id));
+            }
+        });
+        
+        const results = await Promise.all(promises);
+        let idx = 0;
+        archivosData = [];
+        
+        CATEGORIAS.forEach(cat => {
+            if (cat.tieneSub) {
+                archivosPorCategoria[cat.id] = {};
+                cat.subs.forEach(sub => {
+                    const files = results[idx++] || [];
+                    archivosPorCategoria[cat.id][sub] = files;
+                    files.forEach(f => {
+                        archivosData.push({
+                            nombre: f.name,
+                            ubicacion: `${cat.nombre} / ${sub}`,
+                            tipo: 'archivo',
+                            path: f.path,
+                            categoria: cat.id,
+                            subCategoria: sub,
+                            url: f.download_url
+                        });
+                    });
+                });
+            } else {
+                const files = results[idx++] || [];
+                archivosPorCategoria[cat.id] = files;
+                if (cat.id !== 'targeta') {
+                    files.forEach(f => {
+                        archivosData.push({
+                            nombre: f.name,
+                            ubicacion: cat.nombre,
+                            tipo: 'archivo',
+                            path: f.path,
+                            categoria: cat.id,
+                            url: f.download_url
+                        });
+                    });
+                }
+            }
+        });
+        
+        renderCurrentView(silent);
+    }
+
+    function renderCurrentView(silent = false) {
+        if (currentTab === CONFIG_TAB.id) renderConfigPanel();
+        else if (currentTab === ADMIN_TAB.id) renderAdminPanel();
+        else renderPublicTab(currentTab, currentSub, silent);
+    }
+
+    function filterBySearch(items, searchTerm, isTarjetas = false) {
+        if (!searchTerm) return items;
+        const term = searchTerm.toLowerCase();
+        
+        if (isTarjetas) {
+            return items.filter(item => 
+                item.titulo.toLowerCase().includes(term) || 
+                item.parrafo.toLowerCase().includes(term) ||
+                item.nombreBase.toLowerCase().includes(term)
+            );
+        } else {
+            return items.filter(item => item.name.toLowerCase().includes(term));
+        }
+    }
+
+    searchInput.addEventListener('input', (e) => {
+        localSearchTerm = e.target.value;
+        clearSearch.style.display = localSearchTerm ? 'block' : 'none';
+        renderCurrentView();
+    });
+
+    clearSearch.addEventListener('click', () => {
+        searchInput.value = '';
+        localSearchTerm = '';
+        clearSearch.style.display = 'none';
+        renderCurrentView();
+    });
+
+    function navigateToResult(result) {
+        if (result.tipo === 'tarjeta') {
+            currentTab = 'targeta';
+            currentSub = null;
+            renderSidebar();
+            renderSubTabs();
+            document.getElementById('currentTabTitle').textContent = 'Nuestro Equipo';
+            
+            renderPublicTab('targeta', null);
+            
+            setTimeout(() => {
+                const tarjetaElement = document.querySelector(`.targeta-card[data-card-id="${result.id}"]`);
+                if (tarjetaElement) {
+                    tarjetaElement.classList.add('highlight-card');
+                    tarjetaElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => {
+                        tarjetaElement.classList.remove('highlight-card');
+                    }, 2000);
+                    showNotification(`✅ Navegando a: ${result.nombre}`, 'success');
+                } else {
+                    showNotification(`⚠️ No se encontró la tarjeta: ${result.nombre}`, 'error');
+                }
+            }, 300);
+        } else if (result.tipo === 'archivo') {
+            const cat = CATEGORIAS.find(c => c.id === result.categoria);
+            if (cat) {
+                currentTab = result.categoria;
+                if (cat.tieneSub && result.subCategoria) {
+                    currentSub = result.subCategoria;
+                } else {
+                    currentSub = null;
+                }
+                renderSidebar();
+                renderSubTabs();
+                document.getElementById('currentTabTitle').textContent = cat.nombre;
+                
+                renderPublicTab(result.categoria, currentSub);
+                
+                setTimeout(() => {
+                    const archivoElement = document.querySelector(`.file-card[data-file-path="${result.path}"]`);
+                    if (archivoElement) {
+                        archivoElement.classList.add('highlight-card');
+                        archivoElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(() => {
+                            archivoElement.classList.remove('highlight-card');
+                        }, 2000);
+                        showNotification(`✅ Navegando a: ${result.nombre}`, 'success');
+                    } else {
+                        showNotification(`⚠️ No se encontró el archivo: ${result.nombre}`, 'error');
+                    }
+                }, 300);
+            }
+        }
+    }
+
+    function performGlobalSearch() {
+        const term = globalSearchTerm.toLowerCase();
+        if (term.length < 2) {
+            globalSearchResults.innerHTML = '';
+            return;
+        }
+
+        let results = [];
+        
+        if (tarjetasData.length > 0) {
+            const tarjetasMatch = tarjetasData.filter(t => 
+                t.titulo.toLowerCase().includes(term) || 
+                t.parrafo.toLowerCase().includes(term)
+            );
+            tarjetasMatch.forEach(t => {
+                results.push({
+                    tipo: 'tarjeta',
+                    nombre: t.titulo,
+                    descripcion: t.parrafo.substring(0, 60),
+                    ubicacion: 'Nuestro Equipo',
+                    id: t.cardId,
+                    nombreBase: t.nombreBase
+                });
+            });
+        }
+        
+        const archivosMatch = archivosData.filter(a => a.nombre.toLowerCase().includes(term));
+        archivosMatch.forEach(a => {
+            results.push({
+                tipo: 'archivo',
+                nombre: a.nombre,
+                ubicacion: a.ubicacion,
+                path: a.path,
+                categoria: a.categoria,
+                subCategoria: a.subCategoria
+            });
+        });
+        
+        if (results.length > 0) {
+            let html = `<div style="font-weight:600; margin-bottom:10px; padding:5px;">🔍 ${results.length} resultados encontrados:</div>`;
+            results.slice(0, 10).forEach(r => {
+                const icon = r.tipo === 'tarjeta' ? 'fa-id-card' : 'fa-file';
+                const color = r.tipo === 'tarjeta' ? '#8b5cf6' : '#2dba4e';
+                html += `
+                    <div class="global-search-result-item" onclick="window.navigateToResult(${JSON.stringify(r).replace(/"/g, '&quot;')})">
+                        <div class="search-result-title">
+                            <i class="fas ${icon}" style="color: ${color};"></i>
+                            <span>${escapeHtml(r.nombre.length > 50 ? r.nombre.substring(0, 50) + '...' : r.nombre)}</span>
+                        </div>
+                        <div class="search-result-location">
+                            <i class="fas fa-folder"></i> ${escapeHtml(r.ubicacion)}
+                            ${r.tipo === 'tarjeta' && r.descripcion ? `<br><span style="font-size:0.7rem;">${escapeHtml(r.descripcion.substring(0, 80))}${r.descripcion.length > 80 ? '...' : ''}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            if (results.length > 10) {
+                html += `<div style="text-align:center; padding:8px; color:#64748b;">... y ${results.length - 10} resultados más</div>`;
+            }
+            globalSearchResults.innerHTML = html;
+        } else {
+            globalSearchResults.innerHTML = '<div style="text-align:center; padding:15px; color:#ef4444;">❌ No se encontraron resultados</div>';
+        }
+    }
+
+    globalSearchInput.addEventListener('input', (e) => {
+        globalSearchTerm = e.target.value;
+        performGlobalSearch();
+    });
+
+    async function cargarUsuarios() {
+        try {
+            const files = await fetchFilesInFolder('usuarios');
+            const usuarioFile = files.find(f => f.name === 'usuarios.json');
+            if (usuarioFile) {
+                const res = await fetch(usuarioFile.download_url + '?t=' + Date.now());
+                usuarios = await res.json();
+            } else {
+                usuarios = [{ id: 1, username: 'admin', password: 'admin123', rol: 'admin' }];
+            }
+        } catch {
+            usuarios = [{ id: 1, username: 'admin', password: 'admin123', rol: 'admin' }];
+        }
+    }
+
+    async function guardarUsuarios() {
+        if (!isOnline) {
+            showNotification('⚠️ Sin conexión. Los cambios se guardarán localmente.', 'error');
+            return false;
+        }
+        if (!githubToken) return false;
+        const content = btoa(unescape(encodeURIComponent(JSON.stringify(usuarios, null, 2))));
+        let sha = null;
+        try {
+            const res = await requestGitHub(`/contents/usuarios/usuarios.json?ref=${GITHUB_BRANCH}`);
+            if (res.ok) sha = (await res.json()).sha;
+        } catch { }
+        try {
+            await requestGitHub(`/contents/usuarios/usuarios.json`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    message: 'Actualizar usuarios',
+                    content: content,
+                    branch: GITHUB_BRANCH,
+                    ...(sha && { sha })
+                })
+            });
+            return true;
+        } catch { return false; }
+    }
+
+    loginBtn.addEventListener('click', async () => {
+        const user = loginUsername.value.trim();
+        const pass = loginPassword.value.trim();
+        const found = usuarios.find(u => u.username === user && u.password === pass);
+        if (found) {
+            isAuthenticated = true;
+            currentUser = found;
+            localStorage.setItem('auth', JSON.stringify({ username: user, timestamp: Date.now() }));
+            loginOverlay.style.display = 'none';
+            appContainer.style.display = 'flex';
+            await loadAllCategories();
+            renderSidebar();
+            renderSubTabs();
+            if (autoUpdateInterval) clearInterval(autoUpdateInterval);
+            autoUpdateInterval = setInterval(async () => {
+                if (!isUpdating && (currentTab === 'targeta' || currentTab.includes('documento'))) {
+                    isUpdating = true;
+                    await loadAllCategories(true);
+                    isUpdating = false;
+                }
+            }, 10000);
+            // Intentar sincronizar operaciones pendientes
+            syncPendingOperations();
+        } else {
+            loginError.textContent = '❌ Usuario o contraseña incorrectos';
+        }
+    });
+
+    async function checkAuth() {
+        const savedAuth = localStorage.getItem('auth');
+        if (savedAuth) {
+            const { username, timestamp } = JSON.parse(savedAuth);
+            if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
+                const user = usuarios.find(u => u.username === username);
+                if (user) {
+                    isAuthenticated = true;
+                    currentUser = user;
+                    loginOverlay.style.display = 'none';
+                    appContainer.style.display = 'flex';
+                    return true;
+                }
+            }
+        }
+        loginOverlay.style.display = 'flex';
+        appContainer.style.display = 'none';
+        return false;
+    }
+
+    function renderSidebar() {
+        const sidebarUserSection = document.getElementById('sidebarUserSection');
+        const logoutContainer = document.getElementById('logoutContainer');
+        const tabContainer = document.getElementById('tabContainer');
+        
+        if (isAuthenticated) {
+            sidebarUserSection.innerHTML = `
+                <div class="user-section">
+                    <div class="user-info">
+                        <i class="fas fa-user-circle"></i>
+                        <span>${escapeHtml(currentUser.username)}</span>
+                        <span>(${currentUser.rol === 'admin' ? 'Admin' : 'User'})</span>
+                    </div>
+                </div>
+            `;
+            logoutContainer.innerHTML = `<button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i><span>Salir</span></button>`;
+        }
+        
+        let tabsHtml = '';
+        CATEGORIAS.forEach(cat => {
+            const activa = (currentTab === cat.id) ? 'activa' : '';
+            tabsHtml += `<button class="tab-btn ${activa}" data-tab="${cat.id}"><i class="fas ${cat.icono}"></i><span>${cat.nombre}</span></button>`;
+        });
+        
+        if (isAuthenticated && currentUser?.rol === 'admin') {
+            tabsHtml += `<button class="tab-btn config-tab ${currentTab === CONFIG_TAB.id ? 'activa' : ''}" data-tab="${CONFIG_TAB.id}"><i class="fas ${CONFIG_TAB.icono}"></i><span>${CONFIG_TAB.nombre}</span></button>`;
+            tabsHtml += `<button class="tab-btn admin-tab ${currentTab === ADMIN_TAB.id ? 'activa' : ''}" data-tab="${ADMIN_TAB.id}"><i class="fas ${ADMIN_TAB.icono}"></i><span>${ADMIN_TAB.nombre}</span></button>`;
+        }
+        
+        tabContainer.innerHTML = tabsHtml;
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const newTab = btn.dataset.tab;
+                if (newTab === CONFIG_TAB.id || newTab === ADMIN_TAB.id) {
+                    currentTab = newTab;
+                    currentSub = null;
+                } else {
+                    const cat = CATEGORIAS.find(c => c.id === newTab);
+                    currentTab = newTab;
+                    if (cat.tieneSub) currentSub = cat.subs[0];
+                    else currentSub = null;
+                }
+                renderSidebar();
+                renderSubTabs();
+                document.getElementById('currentTabTitle').textContent = CATEGORIAS.find(c => c.id === currentTab)?.nombre || '';
+                renderCurrentView();
+            });
+        });
+        
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            isAuthenticated = false;
+            currentUser = null;
+            localStorage.removeItem('auth');
+            if (autoUpdateInterval) clearInterval(autoUpdateInterval);
+            loginOverlay.style.display = 'flex';
+            appContainer.style.display = 'none';
+        });
+    }
+
+    function renderSubTabs() {
+        const cat = CATEGORIAS.find(c => c.id === currentTab);
+        const subTabsContainer = document.getElementById('subTabsContainer');
+        
+        if (!cat || !cat.tieneSub || currentTab === CONFIG_TAB.id || currentTab === ADMIN_TAB.id) {
+            subTabsContainer.style.display = 'none';
+            return;
+        }
+        
+        let html = '';
+        cat.subs.forEach(sub => {
+            const activa = (currentSub === sub) ? 'activa' : '';
+            html += `<button class="sub-tab-horizontal-btn ${activa}" data-sub="${sub}"><i class="fas fa-folder"></i><span>${sub}</span></button>`;
+        });
+        
+        subTabsContainer.innerHTML = html;
+        subTabsContainer.style.display = 'flex';
+        
+        document.querySelectorAll('.sub-tab-horizontal-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentSub = btn.dataset.sub;
+                renderSubTabs();
+                renderCurrentView();
+            });
+        });
+    }
+
+    async function cargarArchivosTarjeta(cardId, tabId) {
+        try {
+            const folderPath = `targeta_docs/${cardId}/${tabId}`;
+            const files = await fetchFilesInFolder(folderPath);
+            if (!archivosPorTarjeta[cardId]) archivosPorTarjeta[cardId] = {};
+            archivosPorTarjeta[cardId][tabId] = files.map(f => ({
+                name: f.name, url: f.download_url, path: f.path, sha: f.sha
+            }));
+            return archivosPorTarjeta[cardId][tabId];
+        } catch (e) { return []; }
+    }
+
+    async function cargarTodosArchivosTarjeta(cardId) {
+        for (const tab of DOC_TABS) {
+            await cargarArchivosTarjeta(cardId, tab.id);
+        }
+    }
+
+    window.subirArchivoTarjeta = async (cardId, tabId) => {
+        if (!githubToken) {
+            showNotification('❌ Se requiere token de GitHub', 'error');
+            return;
+        }
+        
+        const fileInput = document.getElementById(`fileUpload_${cardId}_${tabId}`);
+        const file = fileInput.files[0];
+        if (!file) {
+            showNotification('❌ Selecciona un archivo', 'error');
+            return;
+        }
+        
+        const folderPath = `targeta_docs/${cardId}/${tabId}`;
+        const exito = await subirArchivoAGitHub(file, folderPath);
+        
+        if (exito) {
+            showNotification('✅ Archivo subido correctamente', 'success');
+            await cargarArchivosTarjeta(cardId, tabId);
+            if (currentCardInfo && currentCardInfo.id === cardId) {
+                renderDocModal(cardId, currentCardInfo.titulo, currentCardInfo.activeTab || 'cv');
+            }
+        } else if (!isOnline) {
+            showNotification('📝 Archivo guardado para sincronizar cuando haya conexión', 'info');
+        } else {
+            showNotification('❌ Error al subir el archivo', 'error');
+        }
+    };
+
+    window.eliminarArchivoTarjeta = async (cardId, tabId, path, sha) => {
+        if (!confirm('¿Eliminar este archivo permanentemente?')) return;
+        
+        const exito = await eliminarArchivoDeGitHub(path);
+        if (exito) {
+            showNotification('✅ Archivo eliminado', 'success');
+            await cargarArchivosTarjeta(cardId, tabId);
+            if (currentCardInfo && currentCardInfo.id === cardId) {
+                renderDocModal(cardId, currentCardInfo.titulo, currentCardInfo.activeTab || 'cv');
+            }
+        } else if (!isOnline) {
+            showNotification('📝 Eliminación guardada para sincronizar cuando haya conexión', 'info');
+        } else {
+            showNotification('❌ Error al eliminar el archivo', 'error');
+        }
+    };
+
+    let currentCardInfo = null;
+
+    window.mostrarDocumentacion = async (cardId, titulo) => {
+        currentCardInfo = { id: cardId, titulo, activeTab: 'cv' };
+        await cargarTodosArchivosTarjeta(cardId);
+        renderDocModal(cardId, titulo, 'cv');
+    };
+
+    function renderDocModal(cardId, titulo, activeTabId) {
+        const docModal = document.getElementById('docModal');
+        const docModalContent = document.getElementById('docModalContent');
+        
+        let tabsHtml = '<div class="doc-tabs">';
+        DOC_TABS.forEach(tab => {
+            const activa = (tab.id === activeTabId) ? 'activa' : '';
+            tabsHtml += `<button class="doc-tab-btn ${activa}" data-tab="${tab.id}">
+                <i class="fas ${tab.icono}"></i> ${tab.nombre}
+            </button>`;
+        });
+        tabsHtml += '</div>';
+
+        let contentHtml = '';
+        for (const tab of DOC_TABS) {
+            const activa = (tab.id === activeTabId) ? 'activa' : '';
+            const files = archivosPorTarjeta[cardId]?.[tab.id] || [];
+            
+            let filesHtml = '<div class="doc-files-list">';
+            if (files.length === 0) {
+                filesHtml += '<div style="text-align:center; padding:20px; color:#64748b;">📂 No hay archivos en esta sección</div>';
+            } else {
+                files.forEach(file => {
+                    filesHtml += `
+                        <div class="doc-file-item">
+                            <div class="doc-file-info">
+                                <i class="fas fa-file"></i>
+                                <span>${escapeHtml(file.name)}</span>
+                            </div>
+                            <div class="doc-file-actions">
+                                <button class="doc-file-btn view-btn" onclick="window.open('${file.url}')">
+                                    <i class="fas fa-eye"></i> Ver
+                                </button>
+                                <a href="${file.url}" download class="doc-file-btn download-btn" style="text-decoration:none;">
+                                    <i class="fas fa-download"></i> Descargar
+                                </a>
+                                ${isAuthenticated && currentUser?.rol === 'admin' ? `
+                                    <button class="doc-file-btn delete-btn" onclick="window.eliminarArchivoTarjeta('${cardId}', '${tab.id}', '${file.path}', '${file.sha}')">
+                                        <i class="fas fa-trash"></i> Eliminar
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            filesHtml += '</div>';
+
+            const uploadSection = (isAuthenticated && currentUser?.rol === 'admin') ? `
+                <div class="upload-section">
+                    <h4 style="margin-bottom:10px;"><i class="fas fa-upload"></i> Subir archivo a ${tab.nombre}</h4>
+                    <input type="file" id="fileUpload_${cardId}_${tab.id}" style="margin-bottom:10px; width:100%; padding:8px; border-radius:20px; border:1px solid #cbd5e1;">
+                    <button class="primary-btn" style="padding:10px;" onclick="window.subirArchivoTarjeta('${cardId}', '${tab.id}')">
+                        <i class="fas fa-cloud-upload-alt"></i> Subir archivo
+                    </button>
+                </div>
+            ` : '';
+
+            contentHtml += `
+                <div class="doc-tab-content ${activa}" id="tab_${cardId}_${tab.id}">
+                    <h3 style="margin-bottom:15px; color:#0f172a;">${tab.nombre}</h3>
+                    ${filesHtml}
+                    ${uploadSection}
+                </div>
+            `;
+        }
+
+        docModalContent.innerHTML = `
+            <h2 style="margin-bottom:20px; color:#0f172a; border-bottom:3px solid #2dba4e; padding-bottom:10px;">
+                <i class="fas fa-folder-open"></i> Documentación: ${escapeHtml(titulo)}
+            </h2>
+            ${tabsHtml}
+            ${contentHtml}
+            <div style="text-align:center; margin-top:20px;">
+                <button class="primary-btn" onclick="document.getElementById('docModal').style.display='none'" style="width:auto; padding:10px 30px; background:#64748b;">
+                    <i class="fas fa-check"></i> Cerrar
+                </button>
+            </div>
+        `;
+        
+        docModalContent.querySelectorAll('.doc-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabId = btn.dataset.tab;
+                docModalContent.querySelectorAll('.doc-tab-btn').forEach(b => b.classList.remove('activa'));
+                docModalContent.querySelectorAll('.doc-tab-content').forEach(c => c.classList.remove('activa'));
+                btn.classList.add('activa');
+                const content = document.getElementById(`tab_${cardId}_${tabId}`);
+                if (content) content.classList.add('activa');
+                if (currentCardInfo) currentCardInfo.activeTab = tabId;
+            });
+        });
+        
+        docModal.style.display = 'flex';
+    }
+
+    window.mostrarImagen = (url) => {
+        const modal = document.getElementById('imageModal');
+        const img = document.getElementById('modalImage');
+        img.src = url;
+        modal.style.display = 'flex';
+    };
+
+    window.editarTarjeta = (imgPath, metaPath, tituloActual, parrafoActual) => {
+        currentEditingCard = { 
+            imgPath: imgPath, 
+            metaPath: metaPath, 
+            tituloActual: tituloActual, 
+            parrafoActual: parrafoActual 
+        };
+        document.getElementById('editCardTitle').value = tituloActual;
+        document.getElementById('editCardParagraph').value = parrafoActual;
+        document.getElementById('editImagePreview').innerHTML = '';
+        document.getElementById('editCardImage').value = '';
+        document.getElementById('editCardModal').style.display = 'flex';
+    };
+
+    window.eliminarTarjeta = async (imgPath, metaPath) => {
+        if (!confirm('⚠️ ¿Estás seguro de eliminar esta tarjeta permanentemente?\n\nEsta acción no se puede deshacer.')) return;
+        
+        showNotification('⏳ Eliminando tarjeta...', 'info');
+        
+        if (!isOnline) {
+            addToPendingQueue({
+                type: 'deleteCard',
+                description: `Eliminar tarjeta`,
+                data: { imgPath: imgPath, metaPath: metaPath }
+            });
+            showNotification('📝 Eliminación guardada para sincronizar cuando haya conexión', 'info');
+            return;
+        }
+        
+        try {
+            if (metaPath) {
+                const exitoMeta = await eliminarArchivoDeGitHub(metaPath);
+                if (!exitoMeta && !isOnline) return;
+            }
+            
+            const exitoImg = await eliminarArchivoDeGitHub(imgPath);
+            if (exitoImg) {
+                showNotification('✅ Tarjeta eliminada correctamente', 'success');
+                await loadAllCategories();
+            } else if (!isOnline) {
+                addToPendingQueue({
+                    type: 'deleteCard',
+                    description: `Eliminar tarjeta`,
+                    data: { imgPath: imgPath, metaPath: metaPath }
+                });
+            } else {
+                showNotification('❌ Error al eliminar la imagen', 'error');
+            }
+        } catch (error) {
+            console.error('Error eliminando tarjeta:', error);
+            showNotification('❌ Error al eliminar la tarjeta', 'error');
+        }
+    };
+
+    window.eliminarArchivo = async (path) => {
+        if (!confirm('⚠️ ¿Estás seguro de eliminar este archivo permanentemente?')) return;
+        
+        const exito = await eliminarArchivoDeGitHub(path);
+        if (exito) {
+            showNotification('✅ Archivo eliminado correctamente', 'success');
+            await loadAllCategories();
+        } else if (!isOnline) {
+            addToPendingQueue({
+                type: 'deleteFile',
+                description: `Eliminar archivo: ${path.split('/').pop()}`,
+                data: { path: path }
+            });
+        } else {
+            showNotification('❌ Error al eliminar el archivo', 'error');
+        }
+    };
+
+    document.getElementById('saveEditBtn')?.addEventListener('click', async () => {
+        if (!currentEditingCard) return;
+        
+        const nuevoTitulo = document.getElementById('editCardTitle').value.trim();
+        const nuevoParrafo = document.getElementById('editCardParagraph').value.trim();
+        const nuevaImagen = document.getElementById('editCardImage').files[0];
+        
+        if (!nuevoTitulo || !nuevoParrafo) {
+            showNotification('❌ El título y la descripción son obligatorios', 'error');
+            return;
+        }
+        
+        showNotification('⏳ Guardando cambios...', 'info');
+        
+        try {
+            const nombreImagenActual = currentEditingCard.imgPath.split('/').pop();
+            const nombreBase = nombreImagenActual.split('.').slice(0, -1).join('.');
+            
+            let nombreImagenFinal = nombreImagenActual;
+            let nuevaImagenBase64 = null;
+            let nuevaImagenNombre = null;
+            
+            if (nuevaImagen) {
+                const extension = nuevaImagen.name.split('.').pop();
+                const nuevoNombreBase = `${nombreBase}_${Date.now()}`;
+                nombreImagenFinal = `${nuevoNombreBase}.${extension}`;
+                nuevaImagenNombre = nombreImagenFinal;
+                
+                const reader = new FileReader();
+                nuevaImagenBase64 = await new Promise((resolve) => {
+                    reader.onload = () => resolve(reader.result.split(',')[1]);
+                    reader.readAsDataURL(nuevaImagen);
+                });
+            }
+            
+            if (!isOnline) {
+                addToPendingQueue({
+                    type: 'updateCard',
+                    description: `Actualizar tarjeta: ${nuevoTitulo}`,
+                    data: {
+                        imgPath: currentEditingCard.imgPath,
+                        metaPath: currentEditingCard.metaPath,
+                        titulo: nuevoTitulo,
+                        parrafo: nuevoParrafo,
+                        nombreImagenFinal: nombreImagenFinal,
+                        nuevaImagenBase64: nuevaImagenBase64,
+                        nuevaImagenNombre: nuevaImagenNombre
+                    }
+                });
+                showNotification('📝 Cambios guardados localmente. Se sincronizarán cuando haya conexión.', 'info');
+                document.getElementById('editCardModal').style.display = 'none';
+                currentEditingCard = null;
+                return;
+            }
+            
+            // Subir nueva imagen si existe
+            if (nuevaImagen) {
+                const nuevoPath = `targeta/${nuevaImagenNombre}`;
+                let sha = null;
+                try {
+                    const res = await requestGitHub(`/contents/${nuevoPath}?ref=${GITHUB_BRANCH}`);
+                    if (res.ok) sha = (await res.json()).sha;
+                } catch { }
+                await requestGitHub(`/contents/${nuevoPath}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        message: `Subir nueva imagen: ${nuevaImagenNombre}`,
+                        content: nuevaImagenBase64,
+                        branch: GITHUB_BRANCH,
+                        ...(sha && { sha })
+                    })
+                });
+                
+                await eliminarArchivoDeGitHub(currentEditingCard.imgPath);
+            }
+            
+            // Actualizar metadata
+            const metaContent = `TITULO: ${nuevoTitulo}\nPARRAFO: ${nuevoParrafo}\nIMAGEN: ${nombreImagenFinal}`;
+            const metaBase64 = btoa(unescape(encodeURIComponent(metaContent)));
+            let metaSha = null;
+            try {
+                const res = await requestGitHub(`/contents/${currentEditingCard.metaPath}?ref=${GITHUB_BRANCH}`);
+                if (res.ok) metaSha = (await res.json()).sha;
+            } catch { }
+            await requestGitHub(`/contents/${currentEditingCard.metaPath}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    message: 'Actualizar metadata',
+                    content: metaBase64,
+                    branch: GITHUB_BRANCH,
+                    ...(metaSha && { sha: metaSha })
+                })
+            });
+            
+            showNotification('✅ Tarjeta actualizada correctamente', 'success');
+            document.getElementById('editCardModal').style.display = 'none';
+            currentEditingCard = null;
+            await loadAllCategories();
+        } catch (error) {
+            console.error('Error guardando cambios:', error);
+            if (!isOnline) {
+                // Si hay error de conexión, guardar en cola
+                const nombreImagenActual = currentEditingCard.imgPath.split('/').pop();
+                const nombreBase = nombreImagenActual.split('.').slice(0, -1).join('.');
+                let nombreImagenFinal = nombreImagenActual;
+                let nuevaImagenBase64 = null;
+                let nuevaImagenNombre = null;
+                
+                if (nuevaImagen) {
+                    const extension = nuevaImagen.name.split('.').pop();
+                    const nuevoNombreBase = `${nombreBase}_${Date.now()}`;
+                    nombreImagenFinal = `${nuevoNombreBase}.${extension}`;
+                    nuevaImagenNombre = nombreImagenFinal;
+                    
+                    const reader = new FileReader();
+                    nuevaImagenBase64 = await new Promise((resolve) => {
+                        reader.onload = () => resolve(reader.result.split(',')[1]);
+                        reader.readAsDataURL(nuevaImagen);
+                    });
+                }
+                
+                addToPendingQueue({
+                    type: 'updateCard',
+                    description: `Actualizar tarjeta: ${nuevoTitulo}`,
+                    data: {
+                        imgPath: currentEditingCard.imgPath,
+                        metaPath: currentEditingCard.metaPath,
+                        titulo: nuevoTitulo,
+                        parrafo: nuevoParrafo,
+                        nombreImagenFinal: nombreImagenFinal,
+                        nuevaImagenBase64: nuevaImagenBase64,
+                        nuevaImagenNombre: nuevaImagenNombre
+                    }
+                });
+                showNotification('📝 Cambios guardados localmente. Se sincronizarán cuando haya conexión.', 'info');
+                document.getElementById('editCardModal').style.display = 'none';
+                currentEditingCard = null;
+            } else {
+                showNotification('❌ Error al guardar los cambios', 'error');
+            }
+        }
+    });
+
+    document.getElementById('cancelEditBtn')?.addEventListener('click', () => {
+        document.getElementById('editCardModal').style.display = 'none';
+        currentEditingCard = null;
+    });
+
+    document.getElementById('editCardImage')?.addEventListener('change', (e) => {
+        if (e.target.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const preview = document.getElementById('editImagePreview');
+                preview.innerHTML = `<img src="${e.target.result}" style="max-width:100%; max-height:200px; border-radius:16px;">`;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+    });
+
+    async function renderPublicTab(tabId, sub = null, silent = false) {
+        let files = [];
+        const cat = CATEGORIAS.find(c => c.id === tabId);
+        
+        if (cat?.tieneSub && sub) {
+            files = archivosPorCategoria[tabId]?.[sub] || [];
+        } else if (!cat?.tieneSub) {
+            files = archivosPorCategoria[tabId] || [];
+        }
+        
+        if (tabId === 'targeta') {
+            const imagenes = files.filter(f => /\.(jpg|jpeg|png|gif|svg|webp)$/i.test(f.name) && !f.name.includes('_metadata') && !f.name.includes('orden.json'));
+            const metadatos = files.filter(f => f.name.endsWith('_metadata.txt'));
+            
+            let tarjetasArray = [];
+            for (const img of imagenes) {
+                const baseName = img.name.split('.').slice(0, -1).join('.');
+                const meta = metadatos.find(m => m.name.startsWith(baseName + '_metadata'));
+                let titulo = 'Tarjeta', parrafo = 'Sin descripción';
+                let cardId = `card_${baseName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                
+                if (meta) {
+                    try {
+                        const res = await fetch(meta.download_url + '?t=' + Date.now());
+                        const texto = await res.text();
+                        texto.split('\n').forEach(line => {
+                            if (line.startsWith('TITULO:')) titulo = line.replace('TITULO:', '').trim();
+                            if (line.startsWith('PARRAFO:')) parrafo = line.replace('PARRAFO:', '').trim();
+                        });
+                    } catch {}
+                }
+                
+                tarjetasArray.push({
+                    nombreBase: baseName,
+                    titulo: titulo,
+                    parrafo: parrafo,
+                    cardId: cardId,
+                    imgUrl: img.download_url,
+                    imgPath: img.path,
+                    metaPath: meta ? meta.path : ''
+                });
+            }
+            
+            tarjetasData = tarjetasArray;
+            
+            // Ordenar alfabéticamente por título
+            tarjetasArray.sort((a, b) => {
+                return a.titulo.localeCompare(b.titulo, 'es', { sensitivity: 'base' });
+            });
+            
+            const filteredTarjetas = filterBySearch(tarjetasArray, localSearchTerm, true);
+            
+            if (filteredTarjetas.length === 0) {
+                if (localSearchTerm) {
+                    const emptyMessage = `<div class="empty-folder">🔍 No hay tarjetas que coincidan con "${escapeHtml(localSearchTerm)}"</div>`;
+                    if (!silent) {
+                        dynamicContent.innerHTML = emptyMessage;
+                        searchStats.textContent = `No se encontraron resultados para "${escapeHtml(localSearchTerm)}"`;
+                    } else {
+                        const container = document.getElementById('dynamicContent');
+                        if (container) {
+                            container.classList.add('fade-update');
+                            container.innerHTML = emptyMessage;
+                            searchStats.textContent = `No se encontraron resultados para "${escapeHtml(localSearchTerm)}"`;
+                            setTimeout(() => container.classList.remove('fade-update'), 300);
+                        }
+                    }
+                } else {
+                    const emptyMessage = `<div class="empty-folder">📂 No hay tarjetas disponibles. Los administradores pueden crear nuevas tarjetas.</div>`;
+                    if (!silent) {
+                        dynamicContent.innerHTML = emptyMessage;
+                        searchStats.textContent = '';
+                    } else {
+                        const container = document.getElementById('dynamicContent');
+                        if (container) {
+                            container.classList.add('fade-update');
+                            container.innerHTML = emptyMessage;
+                            searchStats.textContent = '';
+                            setTimeout(() => container.classList.remove('fade-update'), 300);
+                        }
+                    }
+                }
+                return;
+            }
+            
+            if (localSearchTerm) {
+                searchStats.textContent = `Mostrando ${filteredTarjetas.length} de ${tarjetasArray.length} tarjetas`;
+            } else {
+                searchStats.textContent = `Total: ${tarjetasArray.length} tarjetas`;
+            }
+            
+            let html = '<div class="files-grid">';
+            filteredTarjetas.forEach((tarjeta) => {
+                html += `
+                    <div class="targeta-card" data-card-id="${tarjeta.cardId}" data-card-name="${tarjeta.nombreBase}">
+                        <img src="${tarjeta.imgUrl}" class="targeta-img" onclick="window.mostrarImagen('${tarjeta.imgUrl}')">
+                        <div class="targeta-titulo">${escapeHtml(tarjeta.titulo)}</div>
+                        <div class="targeta-parrafo">${escapeHtml(tarjeta.parrafo)}</div>
+                        <div class="card-actions">
+                            <button class="card-action-btn doc-btn" onclick="window.mostrarDocumentacion('${tarjeta.cardId}', '${escapeHtml(tarjeta.titulo)}')">
+                                <i class="fas fa-book"></i> Documentación
+                            </button>
+                            ${isAuthenticated && currentUser?.rol === 'admin' ? `
+                                <button class="card-action-btn edit-btn" onclick="window.editarTarjeta('${tarjeta.imgPath}', '${tarjeta.metaPath}', '${escapeHtml(tarjeta.titulo)}', '${escapeHtml(tarjeta.parrafo)}')">
+                                    <i class="fas fa-edit"></i> Editar
+                                </button>
+                                <button class="card-action-btn delete-btn" onclick="window.eliminarTarjeta('${tarjeta.imgPath}', '${tarjeta.metaPath}')">
+                                    <i class="fas fa-trash"></i> Eliminar
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            if (!silent) {
+                dynamicContent.innerHTML = html + '</div>';
+            } else {
+                const container = document.getElementById('dynamicContent');
+                if (container) {
+                    container.classList.add('fade-update');
+                    container.innerHTML = html + '</div>';
+                    setTimeout(() => container.classList.remove('fade-update'), 300);
+                }
+            }
+        } else {
+            const filteredFiles = filterBySearch(files, localSearchTerm, false);
+            
+            if (filteredFiles.length === 0) {
+                if (localSearchTerm) {
+                    const emptyMessage = `<div class="empty-folder">🔍 No hay archivos que coincidan con "${escapeHtml(localSearchTerm)}"</div>`;
+                    if (!silent) {
+                        dynamicContent.innerHTML = emptyMessage;
+                        searchStats.textContent = `No se encontraron resultados para "${escapeHtml(localSearchTerm)}"`;
+                    } else {
+                        const container = document.getElementById('dynamicContent');
+                        if (container) {
+                            container.classList.add('fade-update');
+                            container.innerHTML = emptyMessage;
+                            searchStats.textContent = `No se encontraron resultados para "${escapeHtml(localSearchTerm)}"`;
+                            setTimeout(() => container.classList.remove('fade-update'), 300);
+                        }
+                    }
+                } else {
+                    const emptyMessage = `<div class="empty-folder">📂 No hay archivos en esta carpeta</div>`;
+                    if (!silent) {
+                        dynamicContent.innerHTML = emptyMessage;
+                        searchStats.textContent = '';
+                    } else {
+                        const container = document.getElementById('dynamicContent');
+                        if (container) {
+                            container.classList.add('fade-update');
+                            container.innerHTML = emptyMessage;
+                            searchStats.textContent = '';
+                            setTimeout(() => container.classList.remove('fade-update'), 300);
+                        }
+                    }
+                }
+                return;
+            }
+            
+            if (localSearchTerm) {
+                searchStats.textContent = `Mostrando ${filteredFiles.length} de ${files.length} archivos`;
+            } else {
+                searchStats.textContent = `Total: ${files.length} archivos`;
+            }
+            
+            let html = '<div class="files-grid">';
+            filteredFiles.forEach(f => {
+                let icon = 'fa-file';
+                const ext = f.name.split('.').pop().toLowerCase();
+                if (['jpg','png','gif'].includes(ext)) icon = 'fa-file-image';
+                else if (ext === 'pdf') icon = 'fa-file-pdf';
+                
+                html += `
+                    <div class="file-card" data-file-path="${f.path}">
+                        <i class="fas ${icon}" style="font-size:2rem; margin-bottom:8px;"></i>
+                        <div style="font-weight:600; margin-bottom:10px;">${escapeHtml(f.name)}</div>
+                        <div class="card-actions">
+                            <button class="card-action-btn view-btn" onclick="window.open('${f.download_url}')"><i class="fas fa-eye"></i> Ver</button>
+                            <a href="${f.download_url}" download class="card-action-btn download-btn"><i class="fas fa-download"></i> Descargar</a>
+                            ${isAuthenticated && currentUser?.rol === 'admin' ? `<button class="card-action-btn delete-btn" onclick="window.eliminarArchivo('${f.path}')"><i class="fas fa-trash"></i> Eliminar</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            if (!silent) {
+                dynamicContent.innerHTML = html + '</div>';
+            } else {
+                const container = document.getElementById('dynamicContent');
+                if (container) {
+                    container.classList.add('fade-update');
+                    container.innerHTML = html + '</div>';
+                    setTimeout(() => container.classList.remove('fade-update'), 300);
+                }
+            }
+        }
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function renderConfigPanel() {
+        document.getElementById('subTabsContainer').style.display = 'none';
+        document.getElementById('currentTabTitle').textContent = 'Subir Archivo';
+        dynamicContent.innerHTML = `
+            <div class="config-panel">
+                <div class="token-row">
+                    <input type="password" id="configToken" value="${githubToken}" placeholder="GitHub token (requerido para subir archivos)">
+                    <button id="saveTokenBtn">Guardar Token</button>
+                </div>
+                <div class="config-section">
+                    <div class="config-card">
+                        <h3><i class="fas fa-id-card"></i> Crear Nueva Tarjeta</h3>
+                        <div class="input-group"><label>Título *</label><input id="cardTitle" placeholder="Título de la tarjeta"></div>
+                        <div class="input-group"><label>Párrafo *</label><textarea id="cardParagraph" rows="3" placeholder="Descripción de la tarjeta"></textarea></div>
+                        <div class="input-group"><label>Imagen *</label><input type="file" id="cardImage" accept="image/*"></div>
+                        <div class="image-preview" id="imagePreview"><i class="fas fa-image"></i> Vista previa</div>
+                        <button class="primary-btn" id="createCardBtn"><i class="fas fa-plus-circle"></i> Crear Tarjeta</button>
+                    </div>
+                    <div class="config-card">
+                        <h3><i class="fas fa-upload"></i> Subir Archivo</h3>
+                        <div class="input-group"><label>Archivo</label><input type="file" id="uploadFile"></div>
+                        <div class="input-group"><label>Carpeta</label>
+                            <select id="uploadFolder">
+                                ${CATEGORIAS.map(c => {
+                                    if (c.tieneSub) {
+                                        return c.subs.map(s => `<option value="${c.id}/${s}">${c.nombre} / ${s}</option>`).join('');
+                                    } else if (c.id !== 'targeta') {
+                                        return `<option value="${c.id}">${c.nombre}</option>`;
+                                    }
+                                    return '';
+                                }).join('')}
+                            </select>
+                        </div>
+                        <button class="primary-btn" id="uploadBtn"><i class="fas fa-cloud-upload-alt"></i> Subir Archivo</button>
+                    </div>
+                </div>
+                <div style="margin-top:20px; padding:15px; background:#fef3c7; border-radius:30px;">
+                    <small><i class="fas fa-info-circle"></i> Para crear tarjetas o subir archivos, necesitas un token de GitHub con permisos de escritura. El token se guarda localmente en tu navegador.</small>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('saveTokenBtn').onclick = () => {
+            githubToken = document.getElementById('configToken').value;
+            localStorage.setItem('github_token', githubToken);
+            showNotification('✅ Token guardado correctamente', 'success');
+        };
+        
+        document.getElementById('cardImage').addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const preview = document.getElementById('imagePreview');
+                    preview.innerHTML = `<img src="${e.target.result}" style="max-width:100%; max-height:200px; border-radius:16px;">`;
+                };
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+        
+        document.getElementById('createCardBtn').onclick = async () => {
+            if (!githubToken) {
+                showNotification('❌ Primero guarda tu token de GitHub', 'error');
+                return;
+            }
+            
+            const titulo = document.getElementById('cardTitle').value.trim();
+            const parrafo = document.getElementById('cardParagraph').value.trim();
+            const imagen = document.getElementById('cardImage').files[0];
+            
+            if (!titulo || !parrafo || !imagen) {
+                showNotification('❌ Completa todos los campos', 'error');
+                return;
+            }
+            
+            showNotification('⏳ Creando tarjeta...', 'info');
+            
+            try {
+                const nombreBase = imagen.name.split('.').slice(0, -1).join('_') + '_' + Date.now();
+                const imgNombre = `${nombreBase}.${imagen.name.split('.').pop()}`;
+                const metaNombre = `${nombreBase}_metadata.txt`;
+                
+                // Leer imagen como base64
+                const readerImg = new FileReader();
+                const imgBase64 = await new Promise((resolve) => {
+                    readerImg.onload = () => resolve(readerImg.result.split(',')[1]);
+                    readerImg.readAsDataURL(imagen);
+                });
+                
+                const metaContent = `TITULO: ${titulo}\nPARRAFO: ${parrafo}\nIMAGEN: ${imgNombre}`;
+                const metaBase64 = btoa(unescape(encodeURIComponent(metaContent)));
+                
+                if (!isOnline) {
+                    addToPendingQueue({
+                        type: 'createCard',
+                        description: `Crear tarjeta: ${titulo}`,
+                        data: {
+                            imgBase64: imgBase64,
+                            imgNombre: imgNombre,
+                            metaBase64: metaBase64,
+                            metaNombre: metaNombre
+                        }
+                    });
+                    showNotification('📝 Tarjeta guardada para crear cuando haya conexión', 'info');
+                    document.getElementById('cardTitle').value = '';
+                    document.getElementById('cardParagraph').value = '';
+                    document.getElementById('cardImage').value = '';
+                    document.getElementById('imagePreview').innerHTML = '<i class="fas fa-image"></i> Vista previa';
+                    return;
+                }
+                
+                // Subir imagen
+                const imgPath = `targeta/${imgNombre}`;
+                let imgSha = null;
+                try {
+                    const res = await requestGitHub(`/contents/${imgPath}?ref=${GITHUB_BRANCH}`);
+                    if (res.ok) imgSha = (await res.json()).sha;
+                } catch { }
+                await requestGitHub(`/contents/${imgPath}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        message: `Subir imagen: ${imgNombre}`,
+                        content: imgBase64,
+                        branch: GITHUB_BRANCH,
+                        ...(imgSha && { sha: imgSha })
+                    })
+                });
+                
+                // Subir metadata
+                const metaPath = `targeta/${metaNombre}`;
+                let metaSha = null;
+                try {
+                    const res = await requestGitHub(`/contents/${metaPath}?ref=${GITHUB_BRANCH}`);
+                    if (res.ok) metaSha = (await res.json()).sha;
+                } catch { }
+                await requestGitHub(`/contents/${metaPath}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        message: `Subir metadata: ${metaNombre}`,
+                        content: metaBase64,
+                        branch: GITHUB_BRANCH,
+                        ...(metaSha && { sha: metaSha })
+                    })
+                });
+                
+                showNotification('✅ Tarjeta creada exitosamente', 'success');
+                document.getElementById('cardTitle').value = '';
+                document.getElementById('cardParagraph').value = '';
+                document.getElementById('cardImage').value = '';
+                document.getElementById('imagePreview').innerHTML = '<i class="fas fa-image"></i> Vista previa';
+                await loadAllCategories();
+            } catch (error) {
+                console.error('Error creando tarjeta:', error);
+                if (!isOnline) {
+                    // Si hay error de conexión, guardar en cola
+                    const readerImg = new FileReader();
+                    const imgBase64 = await new Promise((resolve) => {
+                        readerImg.onload = () => resolve(readerImg.result.split(',')[1]);
+                        readerImg.readAsDataURL(imagen);
+                    });
+                    const metaContent = `TITULO: ${titulo}\nPARRAFO: ${parrafo}\nIMAGEN: ${imagen.name}`;
+                    const metaBase64 = btoa(unescape(encodeURIComponent(metaContent)));
+                    const nombreBase = imagen.name.split('.').slice(0, -1).join('_') + '_' + Date.now();
+                    const imgNombre = `${nombreBase}.${imagen.name.split('.').pop()}`;
+                    const metaNombre = `${nombreBase}_metadata.txt`;
+                    
+                    addToPendingQueue({
+                        type: 'createCard',
+                        description: `Crear tarjeta: ${titulo}`,
+                        data: {
+                            imgBase64: imgBase64,
+                            imgNombre: imgNombre,
+                            metaBase64: metaBase64,
+                            metaNombre: metaNombre
+                        }
+                    });
+                    showNotification('📝 Tarjeta guardada para crear cuando haya conexión', 'info');
+                    document.getElementById('cardTitle').value = '';
+                    document.getElementById('cardParagraph').value = '';
+                    document.getElementById('cardImage').value = '';
+                    document.getElementById('imagePreview').innerHTML = '<i class="fas fa-image"></i> Vista previa';
+                } else {
+                    showNotification('❌ Error al crear la tarjeta', 'error');
+                }
+            }
+        };
+        
+        document.getElementById('uploadBtn').onclick = async () => {
+            if (!githubToken) {
+                showNotification('❌ Primero guarda tu token de GitHub', 'error');
+                return;
+            }
+            
+            const file = document.getElementById('uploadFile').files[0];
+            const folder = document.getElementById('uploadFolder').value;
+            
+            if (!file) {
+                showNotification('❌ Selecciona un archivo', 'error');
+                return;
+            }
+            
+            showNotification('⏳ Subiendo archivo...', 'info');
+            
+            const exito = await subirArchivoAGitHub(file, folder);
+            if (exito) {
+                showNotification('✅ Archivo subido correctamente', 'success');
+                document.getElementById('uploadFile').value = '';
+                await loadAllCategories();
+            } else if (!isOnline) {
+                showNotification('📝 Archivo guardado para subir cuando haya conexión', 'info');
+                document.getElementById('uploadFile').value = '';
+            } else {
+                showNotification('❌ Error al subir el archivo', 'error');
+            }
+        };
+    }
+
+    function renderAdminPanel() {
+        document.getElementById('subTabsContainer').style.display = 'none';
+        document.getElementById('currentTabTitle').textContent = 'Administrar Usuarios';
+        dynamicContent.innerHTML = `
+            <div class="config-panel admin-panel">
+                <h2><i class="fas fa-users-cog"></i> Gestión de Usuarios</h2>
+                <div class="config-section">
+                    <div class="config-card">
+                        <h3><i class="fas fa-user-plus"></i> Nuevo Usuario</h3>
+                        <div class="input-group"><label>Usuario *</label><input id="newUser" placeholder="Nombre de usuario"></div>
+                        <div class="input-group"><label>Contraseña *</label><input id="newPass" type="password" placeholder="Contraseña"></div>
+                        <div class="input-group"><label>Rol</label>
+                            <select id="newRol">
+                                <option value="usuario">👤 Usuario</option>
+                                <option value="admin">👑 Administrador</option>
+                            </select>
+                        </div>
+                        <button class="primary-btn" id="createUserBtn"><i class="fas fa-save"></i> Crear Usuario</button>
+                    </div>
+                    <div class="config-card">
+                        <h3><i class="fas fa-users"></i> Usuarios Registrados</h3>
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            ${usuarios.map(u => `
+                                <div style="padding:12px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+                                    <div>
+                                        <strong><i class="fas fa-user-circle"></i> ${escapeHtml(u.username)}</strong>
+                                        <span style="margin-left:10px; padding:2px 8px; border-radius:20px; font-size:0.8rem; background:${u.rol === 'admin' ? '#8b5cf6' : '#2dba4e'}; color:white;">${u.rol === 'admin' ? 'Admin' : 'Usuario'}</span>
+                                    </div>
+                                    ${u.username !== 'admin' ? `
+                                        <button onclick="window.eliminarUsuario(${u.id})" style="background:#ef4444; color:white; border:none; padding:5px 12px; border-radius:20px; cursor:pointer;">
+                                            <i class="fas fa-trash"></i> Eliminar
+                                        </button>
+                                    ` : '<span style="color:#94a3b8;"><i class="fas fa-crown"></i> Principal</span>'}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('createUserBtn').onclick = async () => {
+            const username = document.getElementById('newUser').value.trim();
+            const password = document.getElementById('newPass').value;
+            const rol = document.getElementById('newRol').value;
+            
+            if (!username || !password) {
+                showNotification('❌ Completa todos los campos', 'error');
+                return;
+            }
+            
+            if (usuarios.some(u => u.username === username)) {
+                showNotification('❌ El usuario ya existe', 'error');
+                return;
+            }
+            
+            const newId = Math.max(...usuarios.map(u => u.id), 0) + 1;
+            usuarios.push({ id: newId, username, password, rol });
+            
+            const exito = await guardarUsuarios();
+            if (exito) {
+                showNotification('✅ Usuario creado correctamente', 'success');
+                document.getElementById('newUser').value = '';
+                document.getElementById('newPass').value = '';
+                renderAdminPanel();
+            } else if (!isOnline) {
+                showNotification('📝 Usuario guardado para crear cuando haya conexión', 'info');
+                document.getElementById('newUser').value = '';
+                document.getElementById('newPass').value = '';
+            } else {
+                showNotification('❌ Error al crear usuario', 'error');
+            }
+        };
+    }
+
+    window.eliminarUsuario = async (id) => {
+        if (!confirm('¿Eliminar este usuario permanentemente?')) return;
+        
+        usuarios = usuarios.filter(u => u.id !== id);
+        const exito = await guardarUsuarios();
+        if (exito) {
+            showNotification('✅ Usuario eliminado', 'success');
+            renderAdminPanel();
+        } else if (!isOnline) {
+            showNotification('📝 Eliminación guardada para sincronizar cuando haya conexión', 'info');
+            renderAdminPanel();
+        } else {
+            showNotification('❌ Error al eliminar usuario', 'error');
+        }
+    };
+
+    window.navigateToResult = navigateToResult;
+
+    document.getElementById('docModal')?.addEventListener('click', (e) => {
+        if (e.target === document.getElementById('docModal')) {
+            document.getElementById('docModal').style.display = 'none';
+        }
+    });
+    
+    document.getElementById('editCardModal')?.addEventListener('click', (e) => {
+        if (e.target === document.getElementById('editCardModal')) {
+            document.getElementById('editCardModal').style.display = 'none';
+        }
+    });
+
+    async function init() {
+        await cargarUsuarios();
+        const autenticado = await checkAuth();
+        if (autenticado) {
+            await loadAllCategories();
+            renderSidebar();
+            renderSubTabs();
+            document.getElementById('currentTabTitle').textContent = 'Nuestro Equipo';
+            // Intentar sincronizar operaciones pendientes al iniciar
+            setTimeout(() => syncPendingOperations(), 1000);
+        }
+        updateConnectionStatus();
+    }
+    
+    init();
+})();
+</script>
+</body>
+</html>
